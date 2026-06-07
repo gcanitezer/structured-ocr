@@ -229,10 +229,47 @@ def train_grpo(
 
 @main.command()
 @click.argument("latex_file", type=click.Path(exists=True))
-def verify(latex_file: str):
-    """Verify LaTeX compilability."""
-    click.echo(f"Verifying {latex_file}...")
-    # Implementation will be added
+@click.option(
+    "--reference",
+    "-r",
+    type=click.Path(exists=True),
+    help="Optional reference .tex file for similarity-based checks.",
+)
+@click.option(
+    "--engine",
+    type=click.Choice(["pdflatex", "xelatex", "lualatex"], case_sensitive=False),
+    default="pdflatex",
+    show_default=True,
+    help="LaTeX engine used to verify compilability.",
+)
+@click.option("--timeout", type=float, default=30.0, show_default=True, help="Per-pass timeout in seconds.")
+@click.option("--passes", type=int, default=2, show_default=True, help="Number of compilation passes.")
+@click.option("--report", type=click.Path(), help="Optional path to write the JSON verification report.")
+def verify(
+    latex_file: str,
+    reference: str | None,
+    engine: str,
+    timeout: float,
+    passes: int,
+    report: str | None,
+):
+    """Verify LaTeX compilability and structure of a .tex file."""
+    from structured_ocr.verification import LaTeXVerifier, VerificationConfig
+
+    cfg = VerificationConfig(
+        compiler_engine=engine,
+        compiler_timeout=timeout,
+        compiler_passes=passes,
+    )
+    verifier = LaTeXVerifier(config=cfg)
+    result = verifier.verify_file(latex_file, reference_path=reference)
+    click.echo(json.dumps(result.to_dict(), indent=2, default=str))
+    if report:
+        verifier.write_report(result, report)
+        click.echo(f"Wrote report to {report}")
+    if not result.passed:
+        ctx = click.get_current_context()
+        ctx.exit(1)
 
 
 @main.command()

@@ -21,13 +21,31 @@ import difflib
 import logging
 import math
 import re
-import subprocess
-import tempfile
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 logger = logging.getLogger(__name__)
+
+
+_COMPILER_REQUIRED: bool = False
+"""Global flag: when ``True``, the compilation test fails if the
+engine is not on ``$PATH`` instead of returning a neutral 0.5 score."""
+
+
+def set_compiler_required(required: bool) -> None:
+    """Configure whether the compilation test must find a real engine.
+
+    Defaults to ``False`` so unit tests work in minimal environments
+    without a TeX distribution installed. CI / training jobs that
+    need a hard signal from compilation should call
+    :func:`set_compiler_required` with ``True`` at startup.
+    """
+    global _COMPILER_REQUIRED
+    _COMPILER_REQUIRED = bool(required)
+
+
+def _compiler_required() -> bool:
+    return _COMPILER_REQUIRED
 
 
 @dataclass
@@ -225,32 +243,68 @@ class LaTeXUnitTestFramework:
         )
 
     def test_compilation_success(
-        self, latex_source: str, compiler: str = "pdflatex", timeout: int = 30
+        self,
+        latex_source: str,
+        compiler: str = "pdflatex",
+        timeout: int = 30,
+        passes: int = 2,
     ) -> UnitTestResult:
-        if not latex_source.strip():
+        """Compile the source with the requested engine and score the result.
+
+        The actual compilation is delegated to
+        :class:`structured_ocr.verification.compiler.LaTeXCompiler`
+        which supports pdflatex/xelatex/lualatex, multi-pass builds,
+        timeouts, and structured log error parsing. The test result is
+        produced in the legacy :class:`UnitTestResult` format so it
+        remains compatible with the existing
+        :class:`RewardFunction` interface.
+
+        Scoring:
+
+        * 1.0 — the engine produced a PDF on the first try.
+        * 0.5 — the engine binary was not on ``$PATH``; we cannot
+          grade the source, so we mark it passed and let the
+          training job continue (callers can flip this via
+          :func:`set_compiler_required`).
+        * 0.0 — the engine ran and failed, or the call timed out.
+        """
+        from structured_ocr.verification.compiler import (
+            CompilationOutcome,
+            LaTeXCompiler,
+        )
+
+        if not latex_source or not latex_source.strip():
             return UnitTestResult("compilation_success", False, 0.0, "empty source")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tex_path = Path(tmpdir) / "doc.tex"
-            tex_path.write_text(latex_source)
-            try:
-                proc = subprocess.run(
-                    [compiler, "-interaction=nonstopmode", "-halt-on-error", "doc.tex"],
-                    cwd=tmpdir,
-                    capture_output=True,
-                    timeout=timeout,
-                )
-                passed = proc.returncode == 0
-                score = 1.0 if passed else 0.0
-                details = f"returncode={proc.returncode}"
-            except FileNotFoundError:
-                passed = True
-                score = 0.5
-                details = f"{compiler} not available"
-            except subprocess.TimeoutExpired:
-                passed = False
-                score = 0.0
-                details = f"{compiler} timed out after {timeout}s"
-        return UnitTestResult("compilation_success", passed, score, details)
+        engine = LaTeXCompiler(
+            engine=compiler, timeout=float(timeout), passes=int(passes)
+        )
+        result = engine.compile_string(latex_source)
+        if result.outcome == CompilationOutcome.SUCCESS:
+            details = (
+                f"engine={compiler} passes={result.passes} "
+                f"elapsed={result.elapsed_seconds:.2f}s"
+            )
+            return UnitTestResult("compilation_success", True, 1.0, details)
+        if result.outcome == CompilationOutcome.COMPILER_NOT_FOUND:
+            passed = not _compiler_required()
+            return UnitTestResult(
+                "compilation_success", passed, 0.5, f"{compiler} not available"
+            )
+        if result.outcome == CompilationOutcome.TIMEOUT:
+            return UnitTestResult(
+                "compilation_success",
+                False,
+                0.0,
+                f"{compiler} timed out after {timeout}s",
+            )
+        details = (
+            f"engine={compiler} outcome={result.outcome.value} "
+            f"returncode={result.returncode} "
+            f"elapsed={result.elapsed_seconds:.2f}s"
+        )
+        if result.errors:
+            details += f" errors={len(result.errors)}"
+        return UnitTestResult("compilation_success", False, 0.0, details)
 
     def test_visual_similarity(
         self, predicted: str, extracted_image: Optional[bytes]

@@ -114,6 +114,10 @@ class TrainingConfig:
     report_to: List[str] = field(default_factory=lambda: ["tensorboard"])
     push_to_hub: bool = False
     hub_model_id: Optional[str] = None
+    run_verification: bool = True
+    compiler_engine: str = "pdflatex"
+    compiler_timeout: float = 30.0
+    compiler_passes: int = 2
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:

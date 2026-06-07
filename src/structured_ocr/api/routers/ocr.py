@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import io
 import time
-import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 

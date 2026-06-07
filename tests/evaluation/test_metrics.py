@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import pytest
-from pathlib import Path
-
 from structured_ocr.eval.metrics import (
-    calculate_edit_distance,
     calculate_bleu,
+    calculate_edit_distance,
     calculate_structural_metrics,
 )
 

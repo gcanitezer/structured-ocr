@@ -171,7 +171,11 @@ class TrainingConfig:
     def from_yaml(cls, text_or_path: Union[str, Path]) -> "TrainingConfig":
         import yaml
 
-        if Path(text_or_path).is_file() if isinstance(text_or_path, str) else text_or_path.is_file():
+        if (
+            Path(text_or_path).is_file()
+            if isinstance(text_or_path, str)
+            else text_or_path.is_file()
+        ):
             with open(text_or_path) as f:
                 data = yaml.safe_load(f) or {}
         else:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -89,11 +88,7 @@ def test_training_config_to_json_roundtrip(tmp_path: Path):
 
 def test_training_config_from_yaml(tmp_path: Path):
     yaml_path = tmp_path / "cfg.yaml"
-    yaml_path.write_text(
-        "model_name: foo\n"
-        "mode: sft_then_grpo\n"
-        "lora:\n  enabled: true\n  r: 8\n"
-    )
+    yaml_path.write_text("model_name: foo\nmode: sft_then_grpo\nlora:\n  enabled: true\n  r: 8\n")
     cfg = TrainingConfig.from_yaml(yaml_path)
     assert cfg.model_name == "foo"
     assert cfg.mode == TrainingMode.SFT_THEN_GRPO

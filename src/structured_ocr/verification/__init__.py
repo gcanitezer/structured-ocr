@@ -13,10 +13,10 @@ training pipeline (e.g. as a post-processing step in the OCR API).
 """
 
 from .compiler import (
+    SUPPORTED_COMPILERS,
     CompilationOutcome,
     CompilationResult,
     LaTeXCompiler,
-    SUPPORTED_COMPILERS,
     compile_document,
     parse_log_errors,
 )

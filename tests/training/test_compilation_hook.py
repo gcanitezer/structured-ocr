@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from structured_ocr.training.reward_functions import (
     LaTeXUnitTestFramework,
     _compiler_required,
@@ -24,9 +22,7 @@ def test_set_compiler_required_flag():
 
 def test_compilation_test_uses_new_compiler():
     fw = LaTeXUnitTestFramework()
-    fake_result = CompilationResult(
-        outcome=CompilationOutcome.SUCCESS, engine="pdflatex", passes=2
-    )
+    fake_result = CompilationResult(outcome=CompilationOutcome.SUCCESS, engine="pdflatex", passes=2)
     with patch(
         "structured_ocr.verification.compiler.LaTeXCompiler.compile_string",
         return_value=fake_result,
@@ -41,9 +37,7 @@ def test_compilation_test_uses_new_compiler():
 
 def test_compilation_test_reports_xelatex():
     fw = LaTeXUnitTestFramework()
-    fake_result = CompilationResult(
-        outcome=CompilationOutcome.SUCCESS, engine="xelatex", passes=2
-    )
+    fake_result = CompilationResult(outcome=CompilationOutcome.SUCCESS, engine="xelatex", passes=2)
     with patch(
         "structured_ocr.verification.compiler.LaTeXCompiler.compile_string",
         return_value=fake_result,
@@ -58,9 +52,7 @@ def test_compilation_test_reports_xelatex():
 
 def test_compilation_test_reports_lualatex():
     fw = LaTeXUnitTestFramework()
-    fake_result = CompilationResult(
-        outcome=CompilationOutcome.SUCCESS, engine="lualatex", passes=2
-    )
+    fake_result = CompilationResult(outcome=CompilationOutcome.SUCCESS, engine="lualatex", passes=2)
     with patch(
         "structured_ocr.verification.compiler.LaTeXCompiler.compile_string",
         return_value=fake_result,
@@ -93,7 +85,9 @@ def test_compilation_test_compiler_not_found_defaults_passed():
     ):
         result = fw.test_compilation_success("doc")
     assert result.score == 0.5
-    assert result.passed is False  # 0.5 < 0.5 not; the "not available" path is passed=True by default
+    assert (
+        result.passed is False
+    )  # 0.5 < 0.5 not; the "not available" path is passed=True by default
 
 
 def test_compilation_test_compiler_not_found_fails_when_required():
@@ -116,9 +110,7 @@ def test_compilation_test_compiler_not_found_fails_when_required():
 
 def test_compilation_test_timeout():
     fw = LaTeXUnitTestFramework()
-    fake_result = CompilationResult(
-        outcome=CompilationOutcome.TIMEOUT, engine="pdflatex"
-    )
+    fake_result = CompilationResult(outcome=CompilationOutcome.TIMEOUT, engine="pdflatex")
     with patch(
         "structured_ocr.verification.compiler.LaTeXCompiler.compile_string",
         return_value=fake_result,

@@ -14,7 +14,7 @@ import logging
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -96,11 +96,7 @@ class DatasetUtils:
             if not reference:
                 logger.debug("Skipping record with no reference LaTeX")
                 continue
-            image = (
-                record.get("image")
-                or record.get("image_path")
-                or record.get("image_uri")
-            )
+            image = record.get("image") or record.get("image_path") or record.get("image_uri")
             prompt = record.get("prompt") or self._build_prompt(instruction, image, record)
             samples.append(
                 PreparedSample(
@@ -137,9 +133,7 @@ class DatasetUtils:
         eval_count = min(eval_count, max(1, len(items) - 1))
         return items[eval_count:], items[:eval_count]
 
-    def write_jsonl(
-        self, samples: Sequence[PreparedSample], path: Union[str, Path]
-    ) -> Path:
+    def write_jsonl(self, samples: Sequence[PreparedSample], path: Union[str, Path]) -> Path:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f:
@@ -176,9 +170,7 @@ class DatasetUtils:
         }
 
     @staticmethod
-    def _build_prompt(
-        instruction: str, image: Optional[str], record: Dict[str, Any]
-    ) -> str:
+    def _build_prompt(instruction: str, image: Optional[str], record: Dict[str, Any]) -> str:
         parts = [instruction]
         if image:
             parts.append(f"[image: {image}]")

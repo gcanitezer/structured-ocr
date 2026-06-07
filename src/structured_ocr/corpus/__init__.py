@@ -1,12 +1,12 @@
 """LaTeX corpus generator for diverse document types."""
 
+from .corpus_cli import corpus
 from .generator import CorpusGenerator
 from .templates import (
-    TextbookTemplate,
-    NewspaperTemplate,
     LeafletTemplate,
+    NewspaperTemplate,
+    TextbookTemplate,
 )
-from .corpus_cli import corpus
 
 __all__ = [
     "CorpusGenerator",

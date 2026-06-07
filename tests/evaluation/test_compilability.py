@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import pytest
-
-from structured_ocr.eval.compilability import CompilabilityChecker, CompilabilityResult
+from structured_ocr.eval.compilability import CompilabilityChecker
 
 
 class TestCompilabilityChecker:
@@ -21,5 +19,5 @@ class TestCompilabilityChecker:
         checker = CompilabilityChecker(timeout_seconds=10)
         latex = r"\invalidcommand\begin{document}"
         result = checker.check(latex)
-        assert result.compilable == False
+        assert not result.compilable
         assert result.attempts >= 1

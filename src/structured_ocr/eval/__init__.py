@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from .metrics import (
-    calculate_edit_distance,
-    calculate_bleu,
-    calculate_structural_metrics,
-    StructuralMetricsResult,
-)
+from .benchmark import BenchmarkResult, BenchmarkRunner, run_benchmark
 from .compilability import CompilabilityChecker, CompilabilityResult, compare_rendered_images
+from .metrics import (
+    StructuralMetricsResult,
+    calculate_bleu,
+    calculate_edit_distance,
+    calculate_structural_metrics,
+)
 from .references import ReferenceIntegrityChecker, ReferenceReport
-from .benchmark import BenchmarkRunner, BenchmarkResult, run_benchmark
 from .report import generate_report, save_report
 
 __all__ = [

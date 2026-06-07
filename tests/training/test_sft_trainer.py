@@ -13,7 +13,6 @@ from structured_ocr.training import (
     SFTDataset,
     SFTResult,
     TrainingConfig,
-    TrainingMode,
 )
 from structured_ocr.training.dataset_utils import PreparedSample
 from structured_ocr.training.sft_trainer import _pad_collator  # noqa: F401

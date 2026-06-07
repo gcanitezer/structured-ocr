@@ -9,7 +9,6 @@ from unittest.mock import patch
 import pytest
 
 from structured_ocr.training import (
-    DatasetUtils,
     GRPOResult,
     RLVRConfig,
     SFTResult,
@@ -18,7 +17,6 @@ from structured_ocr.training import (
     TrainingPipeline,
     TrainingResult,
 )
-from structured_ocr.training.dataset_utils import PreparedSample
 
 
 def _write_jsonl(path: Path, n: int = 5) -> None:
@@ -140,8 +138,9 @@ def test_pipeline_run_sft_then_grpo(tmp_path: Path):
     grpo_result = GRPOResult(
         output_dir=tmp_path / "out", final_reward=0.7, num_steps=2, num_prompts=4
     )
-    with patch.object(pipeline, "_run_sft", return_value=sft_result), patch.object(
-        pipeline, "_run_grpo", return_value=grpo_result
+    with (
+        patch.object(pipeline, "_run_sft", return_value=sft_result),
+        patch.object(pipeline, "_run_grpo", return_value=grpo_result),
     ):
         result = pipeline.run()
     assert result.sft_result is not None

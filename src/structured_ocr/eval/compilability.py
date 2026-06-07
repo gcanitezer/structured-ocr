@@ -8,7 +8,7 @@ from typing import Optional
 import numpy as np
 from PIL import Image
 
-from structured_ocr.verification.compiler import LaTeXCompiler, CompilationResult
+from structured_ocr.verification.compiler import LaTeXCompiler
 
 
 @dataclass
@@ -54,17 +54,16 @@ class CompilabilityChecker:
             compilable=False,
             compiler_used=None,
             output_path=None,
-            error_log="\n".join(last_result.errors) if last_result and last_result.errors else "No compilers available",
+            error_log="\n".join(last_result.errors)
+            if last_result and last_result.errors
+            else "No compilers available",
             warnings=last_result.warnings if last_result else [],
             elapsed_seconds=last_result.elapsed_seconds if last_result else 0.0,
             attempts=len(preferred_order),
         )
 
     def compare_rendered_images(
-        self,
-        generated_latex: str,
-        reference_image: Path,
-        output_dir: Optional[Path] = None
+        self, generated_latex: str, reference_image: Path, output_dir: Optional[Path] = None
     ) -> Optional[float]:
         if not self.enable_image_comparison:
             return None
@@ -90,6 +89,7 @@ class CompilabilityChecker:
 def _pdf_to_image(pdf_path: Path) -> Optional[Image.Image]:
     try:
         from pdf2image import convert_from_path
+
         images = convert_from_path(str(pdf_path), dpi=150)
         if images:
             return images[0]
@@ -112,11 +112,11 @@ def _image_similarity(img1: Image.Image, img2: Image.Image) -> float:
             arr2 = _image_to_array(img2)
 
     diff = np.abs(arr1.astype(float) - arr2.astype(float))
-    mse = np.mean(diff ** 2)
+    mse = np.mean(diff**2)
     if mse == 0:
         return 1.0
 
-    max_mse = 255 ** 2
+    max_mse = 255**2
     similarity = 1.0 - min(mse / max_mse, 1.0)
     return similarity
 

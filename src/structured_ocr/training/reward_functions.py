@@ -21,8 +21,8 @@ import difflib
 import logging
 import math
 import re
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence
 
 from .types import RewardConfig
 
@@ -121,7 +121,7 @@ class LaTeXUnitTestFramework:
                 if re.search(r"\\\\\s*$", body.rstrip()):
                     errors += 1
         inline = re.findall(r"\$([^$\n]+)\$", predicted)
-        for math in inline:
+        for math_expr in inline:
             total += 1
             if math.count("$") % 2 == 1:
                 errors += 1
@@ -178,9 +178,7 @@ class LaTeXUnitTestFramework:
         labeled = set(re.findall(r"\\label\{([^}]+)\}", latex_source))
         used = cited | labeled
         if not used:
-            return UnitTestResult(
-                "citation_label_integrity", True, 1.0, "no citations or labels"
-            )
+            return UnitTestResult("citation_label_integrity", True, 1.0, "no citations or labels")
         symmetric_diff = cited.symmetric_difference(labeled)
         score = 1.0 - (len(symmetric_diff) / max(len(used), 1))
         return UnitTestResult(
@@ -239,21 +237,16 @@ class LaTeXUnitTestFramework:
 
         if not latex_source or not latex_source.strip():
             return UnitTestResult("compilation_success", False, 0.0, "empty source")
-        engine = LaTeXCompiler(
-            engine=compiler, timeout=float(timeout), passes=int(passes)
-        )
+        engine = LaTeXCompiler(engine=compiler, timeout=float(timeout), passes=int(passes))
         result = engine.compile_string(latex_source)
         if result.outcome == CompilationOutcome.SUCCESS:
             details = (
-                f"engine={compiler} passes={result.passes} "
-                f"elapsed={result.elapsed_seconds:.2f}s"
+                f"engine={compiler} passes={result.passes} elapsed={result.elapsed_seconds:.2f}s"
             )
             return UnitTestResult("compilation_success", True, 1.0, details)
         if result.outcome == CompilationOutcome.COMPILER_NOT_FOUND:
             passed = not _compiler_required()
-            return UnitTestResult(
-                "compilation_success", passed, 0.5, f"{compiler} not available"
-            )
+            return UnitTestResult("compilation_success", passed, 0.5, f"{compiler} not available")
         if result.outcome == CompilationOutcome.TIMEOUT:
             return UnitTestResult(
                 "compilation_success",
@@ -274,9 +267,7 @@ class LaTeXUnitTestFramework:
         self, predicted: str, extracted_image: Optional[bytes]
     ) -> UnitTestResult:
         if extracted_image is None:
-            return UnitTestResult(
-                "visual_similarity", True, 0.5, "no reference image; skipping"
-            )
+            return UnitTestResult("visual_similarity", True, 0.5, "no reference image; skipping")
         return UnitTestResult(
             "visual_similarity",
             False,
@@ -386,9 +377,7 @@ class RewardFunction:
     ) -> List[RewardResult]:
         if images is None:
             images = [None] * len(predictions)
-        return [
-            self.compute(p, r, img) for p, r, img in zip(predictions, references, images)
-        ]
+        return [self.compute(p, r, img) for p, r, img in zip(predictions, references, images)]
 
     @staticmethod
     def _shape_reward(score: float) -> float:

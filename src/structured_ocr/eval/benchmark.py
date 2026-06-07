@@ -3,12 +3,17 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from .metrics import calculate_edit_distance, calculate_bleu, calculate_structural_metrics, StructuralMetricsResult
 from .compilability import CompilabilityChecker, CompilabilityResult
+from .metrics import (
+    StructuralMetricsResult,
+    calculate_bleu,
+    calculate_edit_distance,
+    calculate_structural_metrics,
+)
 from .references import ReferenceIntegrityChecker, ReferenceReport
 
 
@@ -109,30 +114,45 @@ class BenchmarkRunner:
             total_eq_f1 += structural.equation_f1
             total_cit_f1 += structural.citation_f1
 
-            per_sample.append(SingleResult(
-                sample_id=sid,
-                prediction=pred,
-                reference=ref,
-                image_path=image_paths.get(sid) if image_paths else None,
-                edit_distance=edit_metrics["edit_distance"],
-                similarity_ratio=edit_metrics["similarity_ratio"],
-                bleu=bleu_metrics["bleu_modified"],
-                structural=structural,
-                compilability=comp_result,
-                reference_integrity=ref_result,
-            ))
+            per_sample.append(
+                SingleResult(
+                    sample_id=sid,
+                    prediction=pred,
+                    reference=ref,
+                    image_path=image_paths.get(sid) if image_paths else None,
+                    edit_distance=edit_metrics["edit_distance"],
+                    similarity_ratio=edit_metrics["similarity_ratio"],
+                    bleu=bleu_metrics["bleu_modified"],
+                    structural=structural,
+                    compilability=comp_result,
+                    reference_integrity=ref_result,
+                )
+            )
 
         n = len(per_sample)
         if n == 0:
-            return BenchmarkResult(model_name=model_name, total_samples=0,
-                avg_edit_distance=1.0, avg_similarity_ratio=0.0, avg_bleu=0.0,
-                avg_section_f1=0.0, avg_table_f1=0.0, avg_equation_f1=0.0,
-                avg_citation_f1=0.0, compilability_rate=0.0, avg_compilation_time=0.0,
-                avg_image_similarity=0.0, avg_reference_integrity=0.0, per_sample=[])
+            return BenchmarkResult(
+                model_name=model_name,
+                total_samples=0,
+                avg_edit_distance=1.0,
+                avg_similarity_ratio=0.0,
+                avg_bleu=0.0,
+                avg_section_f1=0.0,
+                avg_table_f1=0.0,
+                avg_equation_f1=0.0,
+                avg_citation_f1=0.0,
+                compilability_rate=0.0,
+                avg_compilation_time=0.0,
+                avg_image_similarity=0.0,
+                avg_reference_integrity=0.0,
+                per_sample=[],
+            )
 
         comp_rate = compilable_count / n if self.check_compilability else 0.0
         avg_comp_time = (total_comp_time / compilable_count) if compilable_count > 0 else 0.0
-        img_count = sum(1 for s in per_sample if s.compilability and s.compilability.compilable and s.image_path)
+        img_count = sum(
+            1 for s in per_sample if s.compilability and s.compilability.compilable and s.image_path
+        )
         avg_img_sim = total_img_sim / img_count if img_count > 0 else 0.0
         ref_count = sum(1 for s in per_sample if s.reference_integrity)
         avg_ref_int = total_ref_int / ref_count if ref_count > 0 else 0.0

@@ -1,8 +1,8 @@
-name: Tests
+name: Test
 
 on:
   push:
-    branches: [main]
+    branches: [main, "convoy/**"]
   pull_request:
     branches: [main]
 
@@ -15,13 +15,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+
+      - name: Install system deps (texlive for compiler tests)
         run: |
-          pip install --upgrade pip
-          pip install -e ".[eval,dev]"
-      - name: Run evaluation tests
-        run: pytest tests/evaluation/
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-science 2>/dev/null || true
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: python -m ruff check src/ tests/
+
+      - name: Test
+        run: python run_tests.py

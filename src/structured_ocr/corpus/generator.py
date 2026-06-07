@@ -92,8 +92,15 @@ class CorpusGenerator:
         image_paths = []
         try:
             result = subprocess.run(
-                ["gs", "-dQUIET", f"-sDEVICE=png150", f"-r{self.dpi}", "-o",
-                 str(output_dir / "page-%d.png"), str(pdf_path)],
+                [
+                    "gs",
+                    "-dQUIET",
+                    "-sDEVICE=png150",
+                    f"-r{self.dpi}",
+                    "-o",
+                    str(output_dir / "page-%d.png"),
+                    str(pdf_path),
+                ],
                 capture_output=True,
                 timeout=120,
             )

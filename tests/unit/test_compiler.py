@@ -1,15 +1,19 @@
 """Unit tests for the real compiler (no stubs)."""
+
 import sys
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from structured_ocr.verification.compiler import (
-    LaTeXCompiler, CompilationOutcome, CompilationResult,
-    parse_log_errors, parse_log_warnings,
-)
 from structured_ocr.evaluation.structural import StructuralEvaluator
+from structured_ocr.verification.compiler import (
+    CompilationOutcome,
+    CompilationResult,
+    LaTeXCompiler,
+    parse_log_errors,
+    parse_log_warnings,
+)
 
 
 class TestLaTeXCompiler(unittest.TestCase):
@@ -48,13 +52,28 @@ class TestLaTeXCompiler(unittest.TestCase):
         c = LaTeXCompiler(timeout=5)
         result = c.compile_string("\\documentclass{article}\\begin{document}A\\end{document}")
         self.assertIsInstance(result, CompilationResult)
-        self.assertIn(result.outcome, (CompilationOutcome.SUCCESS, CompilationOutcome.COMPILER_NOT_FOUND, CompilationOutcome.FAILED))
+        self.assertIn(
+            result.outcome,
+            (
+                CompilationOutcome.SUCCESS,
+                CompilationOutcome.COMPILER_NOT_FOUND,
+                CompilationOutcome.FAILED,
+            ),
+        )
 
     def test_compilation_result_has_expected_attrs(self):
         c = LaTeXCompiler(timeout=5)
         result = c.compile_string("\\documentclass{article}\\begin{document}A\\end{document}")
-        for attr in ("outcome", "returncode", "engine", "passes", "elapsed_seconds",
-                     "errors", "warnings", "message"):
+        for attr in (
+            "outcome",
+            "returncode",
+            "engine",
+            "passes",
+            "elapsed_seconds",
+            "errors",
+            "warnings",
+            "message",
+        ):
             self.assertTrue(hasattr(result, attr), f"missing attr {attr}")
 
     def test_compile_file_nonexistent(self):
@@ -82,7 +101,9 @@ class TestLaTeXCompiler(unittest.TestCase):
     def test_score_property(self):
         self.assertEqual(CompilationResult(outcome=CompilationOutcome.SUCCESS).score, 1.0)
         self.assertEqual(CompilationResult(outcome=CompilationOutcome.FAILED).score, 0.0)
-        self.assertEqual(CompilationResult(outcome=CompilationOutcome.COMPILER_NOT_FOUND).score, 0.5)
+        self.assertEqual(
+            CompilationResult(outcome=CompilationOutcome.COMPILER_NOT_FOUND).score, 0.5
+        )
 
 
 class TestParseLogFunctions(unittest.TestCase):
@@ -109,13 +130,17 @@ class TestStructuralEvaluator(unittest.TestCase):
         self.eval = StructuralEvaluator()
 
     def test_section_f1_perfect(self):
-        from structured_ocr.data.types import DocumentStructure as DS, DocumentNode as DN
+        from structured_ocr.data.types import DocumentNode as DN
+        from structured_ocr.data.types import DocumentStructure as DS
+
         pred = DS(sections=[DN("section", "intro")])
         gold = DS(sections=[DN("section", "intro")])
         self.assertAlmostEqual(self.eval.compute_section_f1(pred, gold), 1.0)
 
     def test_section_f1_mismatch(self):
-        from structured_ocr.data.types import DocumentStructure as DS, DocumentNode as DN
+        from structured_ocr.data.types import DocumentNode as DN
+        from structured_ocr.data.types import DocumentStructure as DS
+
         pred = DS(sections=[DN("section", "intro")])
         gold = DS(sections=[DN("section", "different")])
         self.assertAlmostEqual(self.eval.compute_section_f1(pred, gold), 0.0)
@@ -143,11 +168,15 @@ class TestStructuralEvaluator(unittest.TestCase):
         self.assertEqual(res["table_count"], 0)
 
     def test_reference_coverage_full(self):
-        coverage = self.eval.evaluate_cross_reference_integrity(r"\label{a}\ref{a}")["reference_coverage"]
+        coverage = self.eval.evaluate_cross_reference_integrity(r"\label{a}\ref{a}")[
+            "reference_coverage"
+        ]
         self.assertEqual(coverage, 1.0)
 
     def test_hierarchy_valid(self):
-        from structured_ocr.data.types import DocumentStructure as DS, DocumentNode as DN
+        from structured_ocr.data.types import DocumentNode as DN
+        from structured_ocr.data.types import DocumentStructure as DS
+
         doc = DS(sections=[DN("section", "Introduction"), DN("section", "Methods")])
         res = self.eval.verify_section_hierarchy(doc)
         self.assertTrue(res["correct_order"])

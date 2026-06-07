@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .benchmark import BenchmarkResult, BaselineScores
+from .benchmark import BaselineScores, BenchmarkResult
 
 
 def generate_report(
@@ -54,9 +54,12 @@ def _compare_with_baseline(result: BenchmarkResult, baseline: BaselineScores) ->
         if our_value is None:
             return {"status": "no_data"}
 
-        best_model = min(
-            [("gpt4v", baseline.gpt4v.get(baseline_key)), ("olmocr", baseline.olmocr.get(baseline_key))],
-            key=lambda x: x[1] if x[1] is not None else float("inf")
+        min(
+            [
+                ("gpt4v", baseline.gpt4v.get(baseline_key)),
+                ("olmocr", baseline.olmocr.get(baseline_key)),
+            ],
+            key=lambda x: x[1] if x[1] is not None else float("inf"),
         )
 
         better_than = []
@@ -119,11 +122,16 @@ def _analyze_per_sample(per_sample: List[Any]) -> Dict[str, Any]:
         },
         "high_error_samples": [
             {"sample_id": s.sample_id, "edit_distance": s.edit_distance}
-            for s in per_sample if s.edit_distance > 0.3
+            for s in per_sample
+            if s.edit_distance > 0.3
         ][:10],
         "low_compilability_samples": [
-            {"sample_id": s.sample_id, "compilable": s.compilability.compilable if s.compilability else None}
-            for s in per_sample if s.compilability and not s.compilability.compilable
+            {
+                "sample_id": s.sample_id,
+                "compilable": s.compilability.compilable if s.compilability else None,
+            }
+            for s in per_sample
+            if s.compilability and not s.compilability.compilable
         ][:10],
     }
 

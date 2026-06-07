@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
 from structured_ocr.training import (
@@ -89,9 +86,7 @@ def test_visual_similarity_no_image():
 
 def test_compilation_success_compiles_simple_doc():
     f = LaTeXUnitTestFramework()
-    src = (
-        "\\documentclass{article}\n\\begin{document}\nHello.\n\\end{document}\n"
-    )
+    src = "\\documentclass{article}\n\\begin{document}\nHello.\n\\end{document}\n"
     r = f.test_compilation_success(src, compiler="pdflatex", timeout=20)
     # Score is either 1.0 (compiled), 0.5 (compiler not found), or 0.0 (failed/timeout)
     assert r.score in (0.0, 0.5, 1.0)

@@ -10,7 +10,14 @@ class TextbookTemplate:
     SUBJECTS = {
         "math": {
             "packages": ["amsmath", "amssymb", "mathtools"],
-            "sections": ["Introduction", "Definitions", "Theorems", "Proofs", "Examples", "Exercises"],
+            "sections": [
+                "Introduction",
+                "Definitions",
+                "Theorems",
+                "Proofs",
+                "Examples",
+                "Exercises",
+            ],
         },
         "biology": {
             "packages": ["graphicx", "float", "booktabs"],
@@ -49,7 +56,11 @@ class TextbookTemplate:
         latex.append("\n\\end{document}")
         return {
             "latex": "\n".join(latex),
-            "metadata": {"type": "textbook", "subject": self.subject, "chapters": self.num_chapters},
+            "metadata": {
+                "type": "textbook",
+                "subject": self.subject,
+                "chapters": self.num_chapters,
+            },
         }
 
     def _generate_section_content(self, section: str) -> list[str]:
@@ -169,12 +180,18 @@ class NewspaperTemplate:
             latex.append(f"\n\\section*{{Headline {i + 1}}}\n")
             latex.append("Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n")
             if random.random() > 0.5:
-                latex.append("\\begin{figure}[ht]\n\\centering\n\\includegraphics[width=0.5\\textwidth]{placeholder}\n\\end{figure}\n")
+                latex.append(
+                    "\\begin{figure}[ht]\n\\centering\n\\includegraphics[width=0.5\\textwidth]{placeholder}\n\\end{figure}\n"
+                )
 
         latex.append("\n\\end{document}")
         return {
             "latex": "\n".join(latex),
-            "metadata": {"type": "newspaper", "columns": self.num_columns, "articles": self.num_articles},
+            "metadata": {
+                "type": "newspaper",
+                "columns": self.num_columns,
+                "articles": self.num_articles,
+            },
         }
 
 
@@ -201,7 +218,7 @@ class LeafletTemplate:
         ]
 
         for i in range(self.sections):
-            latex.append(f"\n\\begin{{minipage}}{{0.23\\textwidth}}\n")
+            latex.append("\n\\begin{minipage}{0.23\\textwidth}\n")
             latex.append(f"\\textbf{{Section {i + 1}}}\n")
             latex.append("Compact information here.\n")
             latex.append("\\end{minipage}\n")

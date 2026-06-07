@@ -1,10 +1,12 @@
 """Data types as simple stdlib classes."""
 
+from __future__ import annotations
+
 
 class BoundingBox:
     __slots__ = ("x1", "y1", "x2", "y2")
 
-    def __init__(self, x1, y1, x2, y2):
+    def __init__(self, x1: float, y1: float, x2: float, y2: float) -> None:
         if x2 <= x1:
             raise ValueError("x2 must be greater than x1")
         if y2 <= y1:
@@ -15,23 +17,23 @@ class BoundingBox:
         self.y2 = float(y2)
 
     @property
-    def width(self):
+    def width(self) -> float:
         return self.x2 - self.x1
 
     @property
-    def height(self):
+    def height(self) -> float:
         return self.y2 - self.y1
 
     @property
-    def area(self):
+    def area(self) -> float:
         return self.width * self.height
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"BoundingBox(x1={self.x1}, y1={self.y1}, x2={self.x2}, y2={self.y2})"
 
 
 class TextBlock:
-    def __init__(self, text, bbox, confidence=0.0):
+    def __init__(self, text: str, bbox: BoundingBox, confidence: float = 0.0) -> None:
         self.text = text
         self.bbox = bbox
         if not (0.0 <= float(confidence) <= 1.0):
@@ -40,14 +42,21 @@ class TextBlock:
 
 
 class FormulaBlock:
-    def __init__(self, latex, bbox, confidence=0.0):
+    def __init__(self, latex: str, bbox: BoundingBox, confidence: float = 0.0) -> None:
         self.latex = latex
         self.bbox = bbox
         self.confidence = max(0.0, min(1.0, float(confidence)))
 
 
 class TableBlock:
-    def __init__(self, content, bbox, num_rows, num_cols, confidence=0.0):
+    def __init__(
+        self,
+        content: str,
+        bbox: BoundingBox,
+        num_rows: int,
+        num_cols: int,
+        confidence: float = 0.0,
+    ) -> None:
         self.content = content
         self.bbox = bbox
         self.num_rows = num_rows
@@ -56,7 +65,9 @@ class TableBlock:
 
 
 class ImageBlock:
-    def __init__(self, path, bbox=None, caption="", confidence=0.0):
+    def __init__(
+        self, path: str, bbox: BoundingBox | None = None, caption: str = "", confidence: float = 0.0
+    ) -> None:
         self.path = path
         self.bbox = bbox
         self.caption = caption
@@ -64,7 +75,14 @@ class ImageBlock:
 
 
 class DocumentNode:
-    def __init__(self, node_type, content, bbox=None, children=None, metadata=None):
+    def __init__(
+        self,
+        node_type: str,
+        content: str,
+        bbox: BoundingBox | None = None,
+        children: list | None = None,
+        metadata: dict | None = None,
+    ) -> None:
         self.node_type = node_type
         self.content = content
         self.bbox = bbox
@@ -73,14 +91,21 @@ class DocumentNode:
 
 
 class DocumentStructure:
-    def __init__(self, title="", sections=None, raw_latex="", page_count=1, metadata=None):
+    def __init__(
+        self,
+        title: str = "",
+        sections: list | None = None,
+        raw_latex: str = "",
+        page_count: int = 1,
+        metadata: dict | None = None,
+    ) -> None:
         self.title = title
         self.sections = sections or []
         self.raw_latex = raw_latex
         self.page_count = page_count
         self.metadata = metadata or {}
 
-    def compute_tree_similarity(self, other):
+    def compute_tree_similarity(self, other: DocumentStructure) -> float:
         if self.raw_latex and other.raw_latex:
             s1 = set(self.raw_latex.split())
             s2 = set(other.raw_latex.split())
@@ -91,21 +116,28 @@ class DocumentStructure:
             return inter / union if union > 0 else 0.0
         return 0.0
 
-    def structural_overlap(self, other):
+    def structural_overlap(self, other: DocumentStructure) -> dict:
         self_types = self._count_types()
         other_types = other._count_types()
         all_types = set(self_types.keys()) | set(other_types.keys())
         return {t: min(self_types.get(t, 0), other_types.get(t, 0)) for t in all_types}
 
-    def _count_types(self):
-        counts = {}
+    def _count_types(self) -> dict:
+        counts: dict = {}
         for node in self.sections:
             counts[node.node_type] = counts.get(node.node_type, 0) + 1
         return counts
 
 
 class LaTeXDocument:
-    def __init__(self, source, document_class="article", packages=None, metadata=None, structure=None):
+    def __init__(
+        self,
+        source: str,
+        document_class: str = "article",
+        packages: list | None = None,
+        metadata: dict | None = None,
+        structure: DocumentStructure | None = None,
+    ) -> None:
         self.source = source
         self.document_class = document_class
         self.packages = packages or []
@@ -114,7 +146,16 @@ class LaTeXDocument:
 
 
 class OCRResult:
-    def __init__(self, latex="", confidence=0.0, processing_time_ms=0.0, model_name="", page_number=1, detected_elements=None, warnings=None):
+    def __init__(
+        self,
+        latex: str = "",
+        confidence: float = 0.0,
+        processing_time_ms: float = 0.0,
+        model_name: str = "",
+        page_number: int = 1,
+        detected_elements: dict | None = None,
+        warnings: list | None = None,
+    ) -> None:
         self.latex = latex
         if not (0.0 <= float(confidence) <= 1.0):
             raise ValueError("confidence must be in [0.0, 1.0]")
@@ -127,7 +168,15 @@ class OCRResult:
 
 
 class EvaluationResult:
-    def __init__(self, test_name, passed, score=0.0, details="", metrics=None, execution_time_ms=0.0):
+    def __init__(
+        self,
+        test_name: str,
+        passed: bool,
+        score: float = 0.0,
+        details: str = "",
+        metrics: dict | None = None,
+        execution_time_ms: float = 0.0,
+    ) -> None:
         self.test_name = test_name
         self.passed = passed
         if not (0.0 <= float(score) <= 1.0):
@@ -139,7 +188,15 @@ class EvaluationResult:
 
 
 class BenchmarkResult:
-    def __init__(self, metric_name, value, unit, threshold, passed, timestamp):
+    def __init__(
+        self,
+        metric_name: str,
+        value: float,
+        unit: str,
+        threshold: float,
+        passed: bool,
+        timestamp: str,
+    ) -> None:
         self.metric_name = metric_name
         self.value = float(value)
         self.unit = unit

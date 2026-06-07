@@ -17,7 +17,7 @@ from structured_ocr.training.reward_functions import (  # noqa: E402
     RewardResult,
     UnitTestResult,
 )
-from structured_ocr.training.types import RewardConfig
+from structured_ocr.training.types import RewardConfig  # noqa: E402
 from structured_ocr.verification.compiler import (  # noqa: E402
     CompilationOutcome,
     CompilationResult,

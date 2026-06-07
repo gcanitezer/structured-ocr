@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class FormulaEvaluator:
     def edit_distance(self, pred: str, gold: str) -> int:
         a, b = pred, gold
@@ -7,10 +10,7 @@ class FormulaEvaluator:
         for i, ca in enumerate(a, 1):
             cur = [i]
             for j, cb in enumerate(b, 1):
-                cur.append(
-                    min(prev[j] + 1, cur[j - 1] + 1,
-                        prev[j - 1] + (0 if ca == cb else 1))
-                )
+                cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (0 if ca == cb else 1)))
             prev = cur
         return prev[-1]
 
@@ -18,7 +18,7 @@ class FormulaEvaluator:
         ed = self.edit_distance(pred, gold)
         return ed / max(len(gold), 1)
 
-    def bleu_score(self, predicted: str, reference: str) -> float:
+    def unigram_token_match_rate(self, predicted: str, reference: str) -> float:
         pred = predicted.replace("=", " ").replace("^", " ").split()
         ref = reference.replace("=", " ").replace("^", " ").split()
         if not pred and not ref:
@@ -46,14 +46,11 @@ class FormulaEvaluator:
     def compute_exact_match_accuracy(self, predictions: list[str], references: list[str]) -> float:
         if not predictions:
             return 0.0
-        matches = sum(
-            1 for p, g in zip(predictions, references)
-            if self.exact_match(p, g)
-        )
+        matches = sum(1 for p, g in zip(predictions, references) if self.exact_match(p, g))
         return matches / len(predictions)
 
     def compute_traditional_metrics(self, predictions: list[str], references: list[str]) -> dict:
-        bleus = [self.bleu_score(p, g) for p, g in zip(predictions, references)]
+        bleus = [self.unigram_token_match_rate(p, g) for p, g in zip(predictions, references)]
         f1s = [self.formula_f1(p, g) for p, g in zip(predictions, references)]
         neds = [self.normalized_edit_distance(p, g) for p, g in zip(predictions, references)]
         return {

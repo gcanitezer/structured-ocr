@@ -77,8 +77,7 @@ def test_prepare_skips_empty_references():
 def test_split_returns_train_and_eval():
     utils = DatasetUtils(seed=123)
     samples = [
-        PreparedSample(prompt=str(i), reference=str(i), image=None, metadata={})
-        for i in range(20)
+        PreparedSample(prompt=str(i), reference=str(i), image=None, metadata={}) for i in range(20)
     ]
     train, evals = utils.split(samples, eval_ratio=0.1)
     assert len(train) == 18

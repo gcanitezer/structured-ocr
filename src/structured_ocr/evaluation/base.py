@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Any
 
 from structured_ocr.data.types import EvaluationResult

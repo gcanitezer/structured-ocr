@@ -18,12 +18,8 @@ from structured_ocr.verification import (
 )
 from structured_ocr.verification.compiler import CompilationOutcome, CompilationResult
 
-
 SAMPLE_DOC = (
-    "\\documentclass{article}\n"
-    "\\begin{document}\n"
-    "Hello. \\section{Intro}\n"
-    "\\end{document}\n"
+    "\\documentclass{article}\n\\begin{document}\nHello. \\section{Intro}\n\\end{document}\n"
 )
 
 
@@ -137,9 +133,7 @@ def test_verifier_batch_returns_summary():
     fake_compilation = CompilationResult(outcome=CompilationOutcome.SUCCESS)
     verifier = LaTeXVerifier()
     verifier._compiler = _FakeCompiler(fake_compilation)
-    summary = verifier.verify_batch(
-        [SAMPLE_DOC, SAMPLE_DOC], references=[SAMPLE_DOC, SAMPLE_DOC]
-    )
+    summary = verifier.verify_batch([SAMPLE_DOC, SAMPLE_DOC], references=[SAMPLE_DOC, SAMPLE_DOC])
     assert isinstance(summary, VerificationSummary)
     assert summary.num_documents == 2
     assert summary.num_compiled == 2
@@ -164,17 +158,13 @@ def test_verifier_batch_with_short_images_pads():
     fake_compilation = CompilationResult(outcome=CompilationOutcome.SUCCESS)
     verifier = LaTeXVerifier()
     verifier._compiler = _FakeCompiler(fake_compilation)
-    summary = verifier.verify_batch(
-        [SAMPLE_DOC, SAMPLE_DOC], references=["", ""], images=[None]
-    )
+    summary = verifier.verify_batch([SAMPLE_DOC, SAMPLE_DOC], references=["", ""], images=[None])
     assert summary.num_documents == 2
 
 
 def test_verifier_write_report(tmp_path: Path):
     verifier = LaTeXVerifier()
-    verifier._compiler = _FakeCompiler(
-        CompilationResult(outcome=CompilationOutcome.SUCCESS)
-    )
+    verifier._compiler = _FakeCompiler(CompilationResult(outcome=CompilationOutcome.SUCCESS))
     result = verifier.verify(SAMPLE_DOC, reference=SAMPLE_DOC)
     report_path = tmp_path / "report.json"
     verifier.write_report(result, report_path)
@@ -222,9 +212,7 @@ def test_verify_documents_helper_returns_summary():
 
 
 def test_verifier_component_weights_applied():
-    cfg = VerificationConfig(
-        component_weights={"compilation_success": 1.0}
-    )
+    cfg = VerificationConfig(component_weights={"compilation_success": 1.0})
     verifier = LaTeXVerifier(config=cfg)
     verifier._compiler = _FakeCompiler(CompilationResult(outcome=CompilationOutcome.SUCCESS))
     result = verifier.verify(SAMPLE_DOC)

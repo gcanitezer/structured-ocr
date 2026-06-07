@@ -6,9 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from structured_ocr.corpus import CorpusGenerator, TextbookTemplate, NewspaperTemplate, LeafletTemplate
+from structured_ocr.corpus import (
+    CorpusGenerator,
+    LeafletTemplate,
+    NewspaperTemplate,
+    TextbookTemplate,
+)
 from structured_ocr.corpus.corpus_cli import corpus
-
 
 TEMPLATE_CLASSES = [
     (TextbookTemplate, {"subject": "math"}),

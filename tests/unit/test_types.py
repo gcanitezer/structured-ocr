@@ -1,4 +1,5 @@
 """Unit tests for data types."""
+
 import sys
 import unittest
 from pathlib import Path
@@ -6,9 +7,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from structured_ocr.data.types import (
-    BoundingBox, TextBlock, FormulaBlock, TableBlock,
-    DocumentStructure, DocumentNode, LaTeXDocument, OCRResult,
-    EvaluationResult, BenchmarkResult
+    BenchmarkResult,
+    BoundingBox,
+    DocumentNode,
+    DocumentStructure,
+    EvaluationResult,
+    OCRResult,
 )
 
 
@@ -57,8 +61,12 @@ class TestDocumentStructure(unittest.TestCase):
         self.assertEqual(d1.compute_tree_similarity(d2), 0.0)
 
     def test_structural_overlap(self):
-        d1 = DocumentStructure(sections=[DocumentNode("section", "A"), DocumentNode("paragraph", "P1")])
-        d2 = DocumentStructure(sections=[DocumentNode("section", "A"), DocumentNode("paragraph", "P2")])
+        d1 = DocumentStructure(
+            sections=[DocumentNode("section", "A"), DocumentNode("paragraph", "P1")]
+        )
+        d2 = DocumentStructure(
+            sections=[DocumentNode("section", "A"), DocumentNode("paragraph", "P2")]
+        )
         overlap = d1.structural_overlap(d2)
         self.assertIn("section", overlap)
         self.assertIn("paragraph", overlap)
@@ -87,7 +95,9 @@ class TestOCRResultModel(unittest.TestCase):
 
 class TestEvaluationResultModel(unittest.TestCase):
     def test_passing_evaluation(self):
-        r = EvaluationResult(test_name="t", passed=True, score=1.0, details="ok", metrics={"f1": 0.95})
+        r = EvaluationResult(
+            test_name="t", passed=True, score=1.0, details="ok", metrics={"f1": 0.95}
+        )
         self.assertTrue(r.passed)
         self.assertEqual(r.metrics["f1"], 0.95)
 
@@ -99,11 +109,15 @@ class TestEvaluationResultModel(unittest.TestCase):
 class TestBenchmarkResultModel(unittest.TestCase):
     def test_passing_benchmark(self):
         import datetime
-        r = BenchmarkResult("latency", 1200.0, "ms", 5000.0, True, datetime.datetime.now().isoformat())
+
+        r = BenchmarkResult(
+            "latency", 1200.0, "ms", 5000.0, True, datetime.datetime.now().isoformat()
+        )
         self.assertTrue(r.passed)
         self.assertLess(r.value, r.threshold)
 
     def test_failure(self):
         import datetime
+
         r = BenchmarkResult("accuracy", 0.5, "f1", 0.7, False, datetime.datetime.now().isoformat())
         self.assertFalse(r.passed)

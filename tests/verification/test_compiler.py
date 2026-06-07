@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-import re
 import subprocess
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from structured_ocr.verification.compiler import (
+    SUPPORTED_COMPILERS,
     CompilationOutcome,
     CompilationResult,
     LaTeXCompiler,
-    SUPPORTED_COMPILERS,
     compile_document,
     parse_log_errors,
     parse_log_warnings,
@@ -88,9 +86,11 @@ def test_compile_string_fake_success_via_subprocess(monkeypatch):
         return completed
 
     compiler = LaTeXCompiler(engine="pdflatex", passes=1)
-    with patch.object(compiler, "is_available", return_value=True), patch.object(
-        compiler, "_lock", new=_DummyLock()
-    ), patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run):
+    with (
+        patch.object(compiler, "is_available", return_value=True),
+        patch.object(compiler, "_lock", new=_DummyLock()),
+        patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run),
+    ):
         result = compiler.compile_string(
             "\\documentclass{article}\\begin{document}x\\end{document}"
         )
@@ -104,9 +104,7 @@ def test_compile_string_fake_success_via_subprocess(monkeypatch):
 
 
 def test_compile_string_fake_failure_via_subprocess():
-    completed = subprocess.CompletedProcess(
-        args=["pdflatex"], returncode=1, stdout="", stderr=""
-    )
+    completed = subprocess.CompletedProcess(args=["pdflatex"], returncode=1, stdout="", stderr="")
 
     def fake_run(cmd, **kwargs):
         Path(kwargs["cwd"]).joinpath("doc.log").write_text(
@@ -115,9 +113,11 @@ def test_compile_string_fake_failure_via_subprocess():
         return completed
 
     compiler = LaTeXCompiler(engine="pdflatex", passes=1)
-    with patch.object(compiler, "is_available", return_value=True), patch.object(
-        compiler, "_lock", new=_DummyLock()
-    ), patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run):
+    with (
+        patch.object(compiler, "is_available", return_value=True),
+        patch.object(compiler, "_lock", new=_DummyLock()),
+        patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run),
+    ):
         result = compiler.compile_string("oops")
     assert result.outcome == CompilationOutcome.FAILED
     assert result.score == 0.0
@@ -131,9 +131,11 @@ def test_compile_string_timeout_via_subprocess():
         raise subprocess.TimeoutExpired(cmd=cmd, timeout=kwargs["timeout"])
 
     compiler = LaTeXCompiler(engine="pdflatex", passes=2, timeout=1.0)
-    with patch.object(compiler, "is_available", return_value=True), patch.object(
-        compiler, "_lock", new=_DummyLock()
-    ), patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run):
+    with (
+        patch.object(compiler, "is_available", return_value=True),
+        patch.object(compiler, "_lock", new=_DummyLock()),
+        patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run),
+    ):
         result = compiler.compile_string("anything")
     assert result.outcome == CompilationOutcome.TIMEOUT
     assert result.score == 0.0
@@ -165,7 +167,10 @@ def test_compile_dispatches_path_or_string(tmp_path: Path):
         result = compiler.compile(tex_path)
         assert result.outcome == CompilationOutcome.COMPILER_NOT_FOUND
     result = compiler.compile("just a string")
-    assert result.outcome in {CompilationOutcome.EMPTY_SOURCE, CompilationOutcome.COMPILER_NOT_FOUND}
+    assert result.outcome in {
+        CompilationOutcome.EMPTY_SOURCE,
+        CompilationOutcome.COMPILER_NOT_FOUND,
+    }
 
 
 def test_compile_document_helper():

@@ -1,24 +1,21 @@
 """Full validation suite — stdlib only. Tests: formula accuracy,
 document structure, cross-reference integrity, data types, edge cases.
 """
+
 import sys
 import unittest
 from pathlib import Path
-from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from structured_ocr.data.types import (
-    DocumentStructure, DocumentNode, OCRResult, BenchmarkResult
-)
-from structured_ocr.evaluation.structural import StructuralEvaluator
+from structured_ocr.data.types import DocumentNode, DocumentStructure
 from structured_ocr.evaluation.formula_metrics import FormulaEvaluator
-from structured_ocr.verification.compiler import LaTeXCompiler
-
+from structured_ocr.evaluation.structural import StructuralEvaluator
 
 # ---------------------------------------------------------------------------
 # Test categories
 # ---------------------------------------------------------------------------
+
 
 class TestFormulaAccuracy(unittest.TestCase):
     """Formula recognition accuracy (Im2LaTeX-100K style subset simulation)."""
@@ -112,7 +109,10 @@ class TestDocumentStructurePreservation(unittest.TestCase):
         self.assertGreaterEqual(res["violations"], 0)
 
     def test_table_structure_valid(self):
-        latex = r"\begin{table}\centering\begin{tabular}{lcc}\hline A & B & C \\\hline\end{tabular}\end{table}"
+        latex = (
+            r"\begin{table}\centering\begin{tabular}{lcc}"
+            r"\hline A & B & C \\\hline\end{tabular}\end{table}"
+        )
         res = self.eval.verify_table_structure(latex)
         self.assertEqual(res["table_count"], 1)
         self.assertEqual(res["tabular_count"], 1)
@@ -127,7 +127,10 @@ class TestDocumentStructurePreservation(unittest.TestCase):
         self.assertTrue(res["has_valid_tabular"])
 
     def test_table_multiple(self):
-        latex = r"\begin{table}\begin{tabular}{l}A\end{tabular}\end{table}\begin{table}\begin{tabular}{c}B\end{tabular}\end{table}"
+        latex = (
+            r"\begin{table}\begin{tabular}{l}A\end{tabular}\end{table}"
+            r"\begin{table}\begin{tabular}{c}B\end{tabular}\end{table}"
+        )
         res = self.eval.verify_table_structure(latex)
         self.assertEqual(res["table_count"], 2)
         self.assertEqual(res["tabular_count"], 2)
@@ -140,8 +143,12 @@ class TestDocumentStructurePreservation(unittest.TestCase):
         self.assertLessEqual(sim, 1.0)
 
     def test_structure_overlap(self):
-        d1 = DocumentStructure(sections=[DocumentNode("section", "A"), DocumentNode("paragraph", "P1")])
-        d2 = DocumentStructure(sections=[DocumentNode("section", "A"), DocumentNode("paragraph", "P2")])
+        d1 = DocumentStructure(
+            sections=[DocumentNode("section", "A"), DocumentNode("paragraph", "P1")]
+        )
+        d2 = DocumentStructure(
+            sections=[DocumentNode("section", "A"), DocumentNode("paragraph", "P2")]
+        )
         overlap = d1.structural_overlap(d2)
         self.assertIn("section", overlap)
         self.assertIn("paragraph", overlap)
@@ -193,9 +200,11 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIn("\\end{document}", latex)
 
     def test_long_latex_no_crash(self):
-        long_latex = "\\documentclass{article}\\begin{document}" + "\n".join(
-            f"\\section{S} Text." for S in ["A", "B", "C", "D", "E"] * 10
-        ) + "\\end{document}"
+        long_latex = (
+            "\\documentclass{article}\\begin{document}"
+            + "\n".join(f"\\section{S} Text." for S in ["A", "B", "C", "D", "E"] * 10)
+            + "\\end{document}"
+        )
         self.assertTrue("\\begin{document}" in long_latex)
         self.assertTrue("\\end{document}" in long_latex)
 

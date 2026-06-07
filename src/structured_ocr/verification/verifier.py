@@ -24,7 +24,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from .compiler import CompilationOutcome, CompilationResult, LaTeXCompiler
 from .result import ComponentResult, VerificationResult, VerificationSummary
@@ -209,9 +209,7 @@ class LaTeXVerifier:
         refs: List[str] = list(references) if references is not None else [""] * len(sources)
         if len(refs) < len(sources):
             refs.extend([""] * (len(sources) - len(refs)))
-        imgs: List[Optional[bytes]] = (
-            list(images) if images is not None else [None] * len(sources)
-        )
+        imgs: List[Optional[bytes]] = list(images) if images is not None else [None] * len(sources)
         if len(imgs) < len(sources):
             imgs.extend([None] * (len(sources) - len(imgs)))
         results: List[VerificationResult] = []
@@ -307,8 +305,7 @@ class LaTeXVerifier:
         num_compiled = sum(
             1
             for r in results
-            if r.compilation is not None
-            and r.compilation.outcome == CompilationOutcome.SUCCESS
+            if r.compilation is not None and r.compilation.outcome == CompilationOutcome.SUCCESS
         )
         return VerificationSummary(
             results=list(results),

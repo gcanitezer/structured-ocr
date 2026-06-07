@@ -6,7 +6,7 @@ from typing import Optional
 
 import click
 
-from structured_ocr.eval import BenchmarkRunner, BaselineScores, generate_report, save_report
+from structured_ocr.eval import BaselineScores, BenchmarkRunner, generate_report, save_report
 from structured_ocr.eval.compilability import CompilabilityChecker
 
 
@@ -17,22 +17,50 @@ def cli():
 
 
 @cli.command()
-@click.option("--predictions", "-p", required=True, type=click.Path(exists=True),
-              help="JSON file with predictions (sample_id -> latex)")
-@click.option("--references", "-r", required=True, type=click.Path(exists=True),
-              help="JSON file with references (sample_id -> latex)")
-@click.option("--images", "-i", type=click.Path(exists=True), default=None,
-              help="JSON file with image paths (sample_id -> path)")
-@click.option("--output", "-o", type=click.Path(), default="eval_report.json",
-              help="Output report path")
+@click.option(
+    "--predictions",
+    "-p",
+    required=True,
+    type=click.Path(exists=True),
+    help="JSON file with predictions (sample_id -> latex)",
+)
+@click.option(
+    "--references",
+    "-r",
+    required=True,
+    type=click.Path(exists=True),
+    help="JSON file with references (sample_id -> latex)",
+)
+@click.option(
+    "--images",
+    "-i",
+    type=click.Path(exists=True),
+    default=None,
+    help="JSON file with image paths (sample_id -> path)",
+)
+@click.option(
+    "--output", "-o", type=click.Path(), default="eval_report.json", help="Output report path"
+)
 @click.option("--model-name", "-m", default="unknown", help="Model name for report")
-@click.option("--baseline", "-b", type=click.Path(exists=True), default=None,
-              help="Baseline scores JSON for comparison")
+@click.option(
+    "--baseline",
+    "-b",
+    type=click.Path(exists=True),
+    default=None,
+    help="Baseline scores JSON for comparison",
+)
 @click.option("--no-compilability", is_flag=True, help="Skip compilability checks")
 @click.option("--no-references", is_flag=True, help="Skip reference integrity checks")
-def evaluate(predictions: str, references: str, images: Optional[str], output: str,
-             model_name: str, baseline: Optional[str], no_compilability: bool,
-             no_references: bool):
+def evaluate(
+    predictions: str,
+    references: str,
+    images: Optional[str],
+    output: str,
+    model_name: str,
+    baseline: Optional[str],
+    no_compilability: bool,
+    no_references: bool,
+):
     """Run evaluation on OCR predictions against references"""
     with open(predictions) as f:
         pred_data = json.load(f)
@@ -84,8 +112,13 @@ def check_compilable(latex: str):
 
 
 @cli.command()
-@click.option("--output", "-o", type=click.Path(), default="default_baselines.json",
-              help="Output path for baseline scores")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    default="default_baselines.json",
+    help="Output path for baseline scores",
+)
 def init_baselines(output: str):
     """Initialize default baseline scores file"""
     baselines = BaselineScores()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from pydantic import BaseModel
@@ -76,8 +76,8 @@ def calculate_bleu(prediction: str, reference: str, n_gram: int = 4) -> Dict[str
 
 
 def _tokenize_latex(text: str) -> List[str]:
-    text = re.sub(r'\s+', ' ', text)
-    tokens = re.findall(r'\\[a-zA-Z]+|{[^{}]*}|[a-zA-Z0-9]+|[^\s]', text)
+    text = re.sub(r"\s+", " ", text)
+    tokens = re.findall(r"\\[a-zA-Z]+|{[^{}]*}|[a-zA-Z0-9]+|[^\s]", text)
     return tokens
 
 
@@ -85,8 +85,8 @@ def _bleu_n_gram(pred_tokens: List[str], ref_tokens: List[str], n: int) -> float
     if len(pred_tokens) < n or len(ref_tokens) < n:
         return 1.0 if pred_tokens == ref_tokens else 0.0
 
-    pred_ngrams = [tuple(pred_tokens[i:i + n]) for i in range(len(pred_tokens) - n + 1)]
-    ref_ngrams = [tuple(ref_tokens[i:i + n]) for i in range(len(ref_tokens) - n + 1)]
+    pred_ngrams = [tuple(pred_tokens[i : i + n]) for i in range(len(pred_tokens) - n + 1)]
+    ref_ngrams = [tuple(ref_tokens[i : i + n]) for i in range(len(ref_tokens) - n + 1)]
 
     if not pred_ngrams:
         return 0.0
@@ -118,22 +118,22 @@ def _brevity_penalty(pred_len: int, ref_len: int) -> float:
 
 
 def _extract_latex_commands(text: str, commands: List[str]) -> List[str]:
-    pattern = r'\\(' + '|'.join(commands) + r')(?:\{([^}]*)\})?'
+    pattern = r"\\(" + "|".join(commands) + r")(?:\{([^}]*)\})?"
     return re.findall(pattern, text)
 
 
 def _extract_construct(text: str, start: str, end: str) -> List[str]:
-    pattern = re.escape(start) + r'(.*?)' + re.escape(end)
+    pattern = re.escape(start) + r"(.*?)" + re.escape(end)
     return re.findall(pattern, text, re.DOTALL)
 
 
 def _extract_labels(text: str) -> List[str]:
-    pattern = r'\\label\{([^}]*)\}'
+    pattern = r"\\label\{([^}]*)\}"
     return re.findall(pattern, text)
 
 
 def _extract_citations(text: str) -> List[str]:
-    pattern = r'\\(?:cite|bibitem)(?:\[.*?\])?\{([^}]*)\}'
+    pattern = r"\\(?:cite|bibitem)(?:\[.*?\])?\{([^}]*)\}"
     return [c for c in re.findall(pattern, text)]
 
 
@@ -173,8 +173,12 @@ def calculate_structural_metrics(prediction: str, reference: str) -> StructuralM
 
 
 def _extract_sections(prediction: str, reference: str) -> Tuple[set, set]:
-    pred_sections = set(_extract_latex_commands(prediction, ["section", "subsection", "subsubsection", "chapter"]))
-    ref_sections = set(_extract_latex_commands(reference, ["section", "subsection", "subsubsection", "chapter"]))
+    pred_sections = set(
+        _extract_latex_commands(prediction, ["section", "subsection", "subsubsection", "chapter"])
+    )
+    ref_sections = set(
+        _extract_latex_commands(reference, ["section", "subsection", "subsubsection", "chapter"])
+    )
     return pred_sections, ref_sections
 
 
@@ -214,8 +218,12 @@ def _extract_equations(prediction: str, reference: str) -> Tuple[set, set]:
     for display_math in _extract_construct(reference, "\\[", "\\]"):
         ref_equations.add(display_math[:100])
 
-    inline_eqs = _extract_latex_commands(prediction, ["frac", "sqrt", "sum", "int", "lim", "prod", "infty"])
-    inline_refs = _extract_latex_commands(reference, ["frac", "sqrt", "sum", "int", "lim", "prod", "infty"])
+    inline_eqs = _extract_latex_commands(
+        prediction, ["frac", "sqrt", "sum", "int", "lim", "prod", "infty"]
+    )
+    inline_refs = _extract_latex_commands(
+        reference, ["frac", "sqrt", "sum", "int", "lim", "prod", "infty"]
+    )
     pred_equations.update(inline_eqs)
     ref_equations.update(inline_refs)
 

@@ -2,10 +2,11 @@
 
 import json
 from pathlib import Path
+
 import click
 
 from .generator import CorpusGenerator
-from .templates import TextbookTemplate, NewspaperTemplate, LeafletTemplate
+from .templates import LeafletTemplate, NewspaperTemplate, TextbookTemplate
 
 
 @click.group()
@@ -17,7 +18,13 @@ def corpus():
 @corpus.command()
 @click.option("--output", "-o", default="./data/corpus", help="Output directory")
 @click.option("--count", "-n", default=100, help="Number of documents")
-@click.option("--subject", "-s", type=click.Choice(["math", "biology", "chemistry"]), default="math", help="Textbook subject")
+@click.option(
+    "--subject",
+    "-s",
+    type=click.Choice(["math", "biology", "chemistry"]),
+    default="math",
+    help="Textbook subject",
+)
 def textbooks(output: str, count: int, subject: str):
     """Generate textbook LaTeX corpus."""
     click.echo(f"Generating {count} {subject} textbooks to {output}")
@@ -33,7 +40,9 @@ def textbooks(output: str, count: int, subject: str):
         if result["success"]:
             click.echo(f"Generated {result['doc_id']} ({result['num_pages']} pages)")
         else:
-            click.echo(f"Failed {result.get('doc_id', i)}: {result.get('error', 'unknown')}", err=True)
+            click.echo(
+                f"Failed {result.get('doc_id', i)}: {result.get('error', 'unknown')}", err=True
+            )
 
 
 @corpus.command()
@@ -92,12 +101,14 @@ def index(output: str, corpus_dir: str):
             images = sorted(doc_dir.glob("page-*.png"))
 
             if tex_file.exists() and pdf_file.exists() and images:
-                index_data.append({
-                    "id": doc_dir.name,
-                    "latex": tex_file.read_text(),
-                    "pdf": str(pdf_file),
-                    "images": [str(img) for img in images],
-                })
+                index_data.append(
+                    {
+                        "id": doc_dir.name,
+                        "latex": tex_file.read_text(),
+                        "pdf": str(pdf_file),
+                        "images": [str(img) for img in images],
+                    }
+                )
 
     Path(output).write_text(json.dumps(index_data, indent=2))
     click.echo(f"Indexed {len(index_data)} documents to {output}")

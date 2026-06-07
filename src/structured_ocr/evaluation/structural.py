@@ -1,12 +1,20 @@
+from __future__ import annotations
+
 import re
+from typing import Any
 
 
 class StructuralEvaluator:
     REQUIRED_SECTIONS = {"introduction", "methods", "results", "conclusion"}
 
-    def compute_section_f1(self, predicted, gold) -> float:
-        pred_set = {n.content.split()[0].lower() if hasattr(n, "content") and n.content else "" for n in predicted.sections}
-        gold_set = {n.content.split()[0].lower() if hasattr(n, "content") and n.content else "" for n in gold.sections}
+    def compute_section_f1(self, predicted: Any, gold: Any) -> float:
+        def _first_word(n: Any) -> str:
+            if hasattr(n, "content") and n.content and n.content.strip():
+                return n.content.split()[0].lower()
+            return ""
+
+        pred_set = {_first_word(n) for n in predicted.sections}
+        gold_set = {_first_word(n) for n in gold.sections}
         pred_set.discard("")
         gold_set.discard("")
         if not pred_set and not gold_set:
@@ -18,9 +26,14 @@ class StructuralEvaluator:
         rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
         return 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
 
-    def verify_section_hierarchy(self, predicted) -> dict:
+    def verify_section_hierarchy(self, predicted: Any) -> dict:
+        def _first_word_or_type(n: Any) -> str:
+            if hasattr(n, "content") and n.content and n.content.strip():
+                return n.content.lower().split()[0]
+            return n.node_type
+
         section_names = [
-            n.content.lower().split()[0] if hasattr(n, "content") and n.content else n.node_type
+            _first_word_or_type(n)
             for n in predicted.sections
             if hasattr(n, "node_type") and n.node_type == "section"
         ]

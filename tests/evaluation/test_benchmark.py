@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import pytest
-
-from structured_ocr.eval.benchmark import BenchmarkRunner, BaselineScores
+from structured_ocr.eval.benchmark import BaselineScores, BenchmarkRunner
 
 
 def test_benchmark_runner_basic():
@@ -32,6 +30,7 @@ def test_baseline_scores_default():
 
 def test_baseline_scores_load(tmp_path):
     import json
+
     baselines_file = tmp_path / "baselines.json"
     baselines_file.write_text(json.dumps(BaselineScores().model_dump()))
     loaded = BaselineScores.load(baselines_file)

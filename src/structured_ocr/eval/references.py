@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import List, Set
 
 from pydantic import BaseModel, Field
 
@@ -67,27 +66,27 @@ class ReferenceIntegrityChecker:
         )
 
     def _extract_labels(self, text: str) -> Set[str]:
-        pattern = r'\\label\{([^}]*)\}'
+        pattern = r"\\label\{([^}]*)\}"
         return set(re.findall(pattern, text))
 
     def _extract_label_usages(self, text: str) -> Set[str]:
-        pattern = r'\\(?:ref|pageref|eqref)\{([^}]*)\}'
+        pattern = r"\\(?:ref|pageref|eqref)\{([^}]*)\}"
         return set(re.findall(pattern, text))
 
     def _extract_citation_keys(self, text: str) -> Set[str]:
-        pattern = r'\\(?:cite|citestyle|citemanager)(?:\[.*?\])?\{([^}]*)\}'
+        pattern = r"\\(?:cite|citestyle|citemanager)(?:\[.*?\])?\{([^}]*)\}"
         keys = set()
         for match in re.findall(pattern, text):
-            for key in match.split(','):
+            for key in match.split(","):
                 keys.add(key.strip())
         return keys
 
     def _extract_bib_items(self, text: str) -> Set[str]:
-        pattern = r'\\bibitem(?:\[.*?\\])?\{([^}]*)\}'
+        pattern = r"\\bibitem(?:\[.*?\\])?\{([^}]*)\}"
         return set(re.findall(pattern, text))
 
     def _extract_bib_file_references(self, text: str) -> Set[str]:
-        pattern = r'\\bibliography\{([^}]*)\}'
+        pattern = r"\\bibliography\{([^}]*)\}"
         return set(re.findall(pattern, text))
 
     def _compute_label_score(self, defined: Set[str], used: Set[str]) -> float:
@@ -106,7 +105,7 @@ class ReferenceIntegrityChecker:
 def _weighted_average(values: List[float], weights: List[float]) -> float:
     if not values:
         return 0.0
-    total_weight = sum(weights[:len(values)])
+    total_weight = sum(weights[: len(values)])
     if total_weight == 0:
         return 0.0
     return sum(v * w for v, w in zip(values, weights)) / total_weight

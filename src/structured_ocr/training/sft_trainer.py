@@ -23,7 +23,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
-from .dataset_utils import PreparedSample
+from .dataset_utils import DatasetUtils, PreparedSample
 from .types import LoRAConfig, QuantizationConfig, TrainingConfig, TrainingMode
 
 logger = logging.getLogger(__name__)
@@ -68,11 +68,13 @@ except Exception:
     HAS_BNB = False
 
 try:
+    from trl import DataCollatorForCompletionOnlyLM  # type: ignore
     from trl import SFTConfig as _TRLSFTConfig  # type: ignore
     from trl import SFTTrainer as _TRLSFTTrainer  # type: ignore
     HAS_TRL = True
 except Exception:
     HAS_TRL = False
+    DataCollatorForCompletionOnlyLM = None  # type: ignore
 
 
 @dataclass
@@ -295,6 +297,9 @@ class SFTTrainer:
         if not samples:
             raise ValueError("No training samples provided")
         tokenizer = self.setup_tokenizer()
+        if eval_samples is None and self.config.eval_dataset is not None:
+            du = DatasetUtils(seed=self.config.seed)
+            eval_samples = du.prepare_from_file(self.config.eval_dataset)
         if HAS_DATASETS:
             train_dicts = [s.to_dict() for s in samples]
             self.train_dataset = _HFDataset.from_list(train_dicts)
@@ -365,6 +370,11 @@ class SFTTrainer:
         args = self._build_training_args()
         if HAS_TRL:
             try:
+                response_template_ids = tokenizer.encode("\n", add_special_tokens=False)
+                collator = DataCollatorForCompletionOnlyLM(
+                    response_template=response_template_ids,
+                    tokenizer=tokenizer,
+                )
                 self.trainer = _TRLSFTTrainer(
                     model=model,
                     args=args,
@@ -372,6 +382,7 @@ class SFTTrainer:
                     eval_dataset=self.eval_dataset,
                     tokenizer=tokenizer,
                     formatting_func=self._formatting_func(),
+                    data_collator=collator,
                 )
                 return self.trainer
             except Exception as exc:  # pragma: no cover - depends on TRL version

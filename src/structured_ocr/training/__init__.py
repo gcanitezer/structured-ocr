@@ -17,7 +17,6 @@ from .reward_functions import (
     LaTeXUnitTestFramework,
     RewardFunction,
     RewardResult,
-    RewardWeights,
     UnitTestResult,
 )
 from .sft_trainer import (
@@ -49,7 +48,6 @@ __all__ = [
     "LaTeXUnitTestFramework",
     "RewardFunction",
     "RewardResult",
-    "RewardWeights",
     "UnitTestResult",
     "SFTResult",
     "SFTTrainer",

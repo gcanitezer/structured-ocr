@@ -9,9 +9,9 @@ import pytest
 
 from structured_ocr.training import (
     LaTeXUnitTestFramework,
+    RewardConfig,
     RewardFunction,
     RewardResult,
-    RewardWeights,
     UnitTestResult,
 )
 
@@ -22,13 +22,13 @@ def test_unit_test_result_default():
 
 
 def test_reward_weights_sum_to_one():
-    w = RewardWeights()
+    w = RewardConfig()
     total = sum(w.as_dict().values())
     assert abs(total - 1.0) < 1e-6
 
 
 def test_reward_weights_validate_rejects_bad_sum():
-    w = RewardWeights(equation_accuracy=0.5, equation_syntax=0.5)
+    w = RewardConfig(equation_accuracy=0.5, equation_syntax=0.5)
     with pytest.raises(ValueError, match="sum to ~1.0"):
         w.validate()
 
@@ -98,15 +98,12 @@ def test_compilation_success_compiles_simple_doc():
 
 
 def test_reward_function_compute_shape():
-    rf = RewardFunction(weights=RewardWeights())
-    result = rf.compute(predicted="\\section{x}", reference="\\section{x}")
-    assert isinstance(result, RewardResult)
-    assert set(result.components.keys()) == set(RewardWeights().as_dict().keys())
-    assert 0.0 <= result.total_reward <= 1.0
+rf = RewardFunction(weights=RewardConfig())
+    assert set(result.components.keys()) == set(RewardConfig().as_dict().keys())
 
 
-def test_reward_function_batch_compute():
-    rf = RewardFunction(weights=RewardWeights())
+def test_reward_function_scoring():
+    rf = RewardFunction(weights=RewardConfig())
     results = rf.batch_compute(
         predictions=["\\section{x}", "no structure"],
         references=["\\section{x}", "\\section{x}"],

@@ -4,6 +4,7 @@ import io
 import time
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from PIL import UnidentifiedImageError
 
 from structured_ocr.api.dependencies import get_inference_engine
 from structured_ocr.api.models.requests import OCRRequest
@@ -24,11 +25,17 @@ async def ocr(
         raise HTTPException(status_code=400, detail="File must be an image")
 
     contents = await file.read()
-    image = _load_image(contents)
+    try:
+        image = _load_image(contents)
+    except UnidentifiedImageError:
+        raise HTTPException(status_code=400, detail="Could not decode image file")
 
     config = _build_config(request)
     start = time.monotonic()
-    result = engine.infer(image, config=config)
+    try:
+        result = engine.infer(image, config=config)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
     elapsed = (time.monotonic() - start) * 1000
 
     return OCRResponse(

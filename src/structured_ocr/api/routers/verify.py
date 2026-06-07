@@ -23,6 +23,10 @@ async def verify(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Verification failed: {e}")
 
+    compilation_errors = (
+        result.compilation.errors if result.compilation else []
+    )
+
     return VerifyResponse(
         passed=result.passed,
         total_score=result.total_score,
@@ -46,5 +50,5 @@ async def verify(
             }
             for c in (result.components or [])
         ],
-        errors=[str(e) for e in (result.errors or [])],
+        errors=compilation_errors,
     )

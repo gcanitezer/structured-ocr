@@ -73,10 +73,10 @@ class HFBackend(Backend):
 
     def infer(self, image: Any) -> OCRResult:
         """Run VLM inference on an image to extract LaTeX."""
-        self._load_model()
         start = time.time()
 
         try:
+            self._load_model()
             inputs = self._processor(
                 text=PROMPT_TEMPLATE,
                 images=image,

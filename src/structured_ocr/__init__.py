@@ -1,5 +1,6 @@
 """Structured OCR - LaTeX OCR System for Full Document Reconstruction."""
 
+from . import inference as inference
 from . import verification as verification
 from .verification import (
     SUPPORTED_COMPILERS,
@@ -20,6 +21,7 @@ from .verification import (
 __version__ = "0.1.0"
 
 __all__ = [
+    "inference",
     "verification",
     "ComponentResult",
     "CompilationOutcome",

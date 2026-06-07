@@ -12,6 +12,19 @@ that supports three modes:
 
 The pipeline is a convenience wrapper used by the CLI and the
 ``train_sft`` / ``train_grpo`` entry points.
+
+It also integrates with :mod:`structured_ocr.verification` so a
+training run can:
+
+* produce a verification report over the eval split after SFT
+  (``run_sft``), capturing the compilation pass rate, equation
+  accuracy, and the other reward components;
+* run a fresh verification report after the GRPO stage so the
+  caller can see how much each component improved between
+  checkpoints (``run_grpo``).
+
+The iterative-improvement loop is enabled by default and can be
+disabled with :attr:`TrainingConfig.run_verification`.
 """
 
 from __future__ import annotations
@@ -43,6 +56,8 @@ class TrainingResult:
     elapsed_seconds: float = 0.0
     config_snapshot: Optional[Dict[str, Any]] = None
     extra: Dict[str, Any] = field(default_factory=dict)
+    sft_verification: Optional[Dict[str, Any]] = None
+    grpo_verification: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -53,6 +68,8 @@ class TrainingResult:
             "elapsed_seconds": self.elapsed_seconds,
             "config_snapshot": self.config_snapshot,
             "extra": self.extra,
+            "sft_verification": self.sft_verification,
+            "grpo_verification": self.grpo_verification,
         }
 
 
@@ -134,14 +151,28 @@ class TrainingPipeline:
         )
         sft_result: Optional[SFTResult] = None
         grpo_result: Optional[GRPOResult] = None
+        sft_verification: Optional[Dict[str, Any]] = None
+        grpo_verification: Optional[Dict[str, Any]] = None
         if self.config.mode == TrainingMode.SFT:
             sft_result = self._run_sft(samples, eval_samples)
+            sft_verification = self._maybe_run_verification(
+                eval_samples, stage="sft"
+            )
         elif self.config.mode == TrainingMode.GRPO:
             grpo_result = self._run_grpo(samples)
+            grpo_verification = self._maybe_run_verification(
+                eval_samples, stage="grpo"
+            )
         elif self.config.mode == TrainingMode.SFT_THEN_GRPO:
             sft_result = self._run_sft(samples, eval_samples)
+            sft_verification = self._maybe_run_verification(
+                eval_samples, stage="sft"
+            )
             self._switch_to_grpo_base_model(sft_result)
             grpo_result = self._run_grpo(samples)
+            grpo_verification = self._maybe_run_verification(
+                eval_samples, stage="grpo"
+            )
         else:
             raise ValueError(f"Unsupported training mode: {self.config.mode}")
         elapsed = time.time() - start
@@ -152,6 +183,8 @@ class TrainingPipeline:
             grpo_result=grpo_result,
             elapsed_seconds=elapsed,
             config_snapshot=self.config.to_dict(),
+            sft_verification=sft_verification,
+            grpo_verification=grpo_verification,
         )
         self._write_result(result)
         return result
@@ -192,6 +225,61 @@ class TrainingPipeline:
             self.config.model_name = str(ckpt)
         else:
             self.config.model_name = str(ckpt)
+
+    def _maybe_run_verification(
+        self,
+        eval_samples: Sequence[PreparedSample],
+        *,
+        stage: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Optionally run the LaTeXVerifier over the eval split.
+
+        Verification is opt-in via
+        :attr:`TrainingConfig.run_verification`. When enabled, the
+        report is written to ``<output_dir>/<stage>_verification.json``
+        and also returned to the caller.
+        """
+        if not getattr(self.config, "run_verification", True):
+            return None
+        if not eval_samples:
+            return None
+        try:
+            from structured_ocr.verification import LaTeXVerifier
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("Could not import LaTeXVerifier: %s", exc)
+            return None
+        engine = getattr(self.config, "compiler_engine", "pdflatex")
+        timeout = float(getattr(self.config, "compiler_timeout", 30.0))
+        passes = int(getattr(self.config, "compiler_passes", 2))
+        verifier = LaTeXVerifier()
+        try:
+            verifier._compiler = type(verifier._compiler)(
+                engine=engine, timeout=timeout, passes=passes
+            )
+        except Exception:  # pragma: no cover - defensive
+            pass
+        sources = [s.reference for s in eval_samples]
+        references = [s.reference for s in eval_samples]
+        try:
+            summary = verifier.verify_batch(sources, references)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("Verification run failed: %s", exc)
+            return None
+        report_path = self.output_dir / f"{stage}_verification.json"
+        try:
+            verifier.write_summary(summary, report_path)
+        except Exception as exc:  # pragma: no cover
+            logger.warning("Could not write verification report: %s", exc)
+        logger.info(
+            "Verification[%s]: %.1f%% pass rate, %.3f batch score, "
+            "%d/%d compiled",
+            stage,
+            100.0 * summary.batch_pass_rate,
+            summary.batch_score,
+            summary.num_compiled,
+            summary.num_documents,
+        )
+        return summary.to_dict()
 
     def _write_result(self, result: TrainingResult) -> None:
         try:

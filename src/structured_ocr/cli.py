@@ -36,7 +36,13 @@ main.add_command(corpus)
 @main.group(invoke_without_command=True)
 @click.argument("image_path", type=click.Path(exists=True), required=False)
 @click.option("--output", "-o", type=click.Path(), help="Output LaTeX file path")
-@click.option("--backend", "-b", type=click.Choice(["pix2text", "huggingface"]), default=None, help="Inference backend")
+@click.option(
+    "--backend",
+    "-b",
+    type=click.Choice(["pix2text", "huggingface"]),
+    default=None,
+    help="Inference backend",
+)
 @click.option("--device", "-d", type=str, default=None, help="Device (cpu, cuda, auto)")
 @click.option("--model", "-m", type=str, default=None, help="Override model name")
 @click.pass_context
@@ -90,7 +96,13 @@ def _run_infer(
 @click.argument("pdf_path", type=click.Path(exists=True))
 @click.option("--output", "-o", type=click.Path(), help="Output JSON file path")
 @click.option("--dpi", type=int, default=150, help="PDF rendering DPI")
-@click.option("--backend", "-b", type=click.Choice(["pix2text", "huggingface"]), default=None, help="Inference backend")
+@click.option(
+    "--backend",
+    "-b",
+    type=click.Choice(["pix2text", "huggingface"]),
+    default=None,
+    help="Inference backend",
+)
 @click.option("--device", "-d", type=str, default=None, help="Device (cpu, cuda, auto)")
 @click.option("--model", "-m", type=str, default=None, help="Override model name")
 def pdf(

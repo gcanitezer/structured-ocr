@@ -38,7 +38,7 @@ class TestExtractImagesFromPDF:
     def test_extract_images_custom_dpi(self, mock_pdf2image):
         mock_images = [Image.new("RGB", (100, 50))]
         mock_pdf2image.convert_from_path.return_value = mock_images
-        result = extract_images_from_pdf("test.pdf", dpi=300)
+        extract_images_from_pdf("test.pdf", dpi=300)
         mock_pdf2image.convert_from_path.assert_called_once_with("test.pdf", dpi=300)
 
     def test_extract_images_empty_pdf(self, mock_pdf2image):
@@ -50,7 +50,7 @@ class TestExtractImagesFromPDF:
         mock_images = [Image.new("RGB", (100, 50))]
         mock_pdf2image.convert_from_path.return_value = mock_images
         pdf_path = Path("/path/to/file.pdf")
-        result = extract_images_from_pdf(pdf_path)
+        extract_images_from_pdf(pdf_path)
         mock_pdf2image.convert_from_path.assert_called_once_with(str(pdf_path), dpi=150)
 
 
@@ -80,3 +80,4 @@ class TestBatchInfer:
         images = [Image.new("RGB", (10, 10))]
         batch_infer(images, mock_engine)
         mock_engine.infer_batch.assert_called_once_with(images)
+

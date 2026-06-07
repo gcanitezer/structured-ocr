@@ -182,3 +182,4 @@ class TestResponses:
         assert data["job_id"] == "abc-123"
         assert data["status"] == "running"
         assert data["message"] == "training started"
+

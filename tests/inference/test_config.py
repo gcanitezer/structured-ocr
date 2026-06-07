@@ -51,3 +51,4 @@ def test_infer_config_partial_override():
 def test_infer_config_is_dataclass():
     import dataclasses
     assert dataclasses.is_dataclass(InferConfig)
+

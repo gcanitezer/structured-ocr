@@ -177,3 +177,4 @@ def test_engine_close(mock_pix2text_backend):
 def test_engine_close_no_backend():
     engine = InferenceEngine()
     engine.close()
+

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-
 from PIL import Image
 from fastapi.testclient import TestClient
 
@@ -33,8 +32,6 @@ class TestOCREndpoint:
             latex="x^2", confidence=0.95, processing_time_ms=10.0,
             model_name="Pix2Text", detected_elements={},
         )
-        mock_infer = lambda img, config=None: mock_engine  # noqa: E731
-
         class MockEngine:
             def infer(self, image, config=None):
                 return mock_engine

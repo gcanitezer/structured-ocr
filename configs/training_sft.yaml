@@ -1,0 +1,76 @@
+# Supervised fine-tuning configuration for the Structured OCR pipeline.
+#
+# This config is consumed by scripts/train_sft.py (or by
+# TrainingPipeline.from_config_path) and is the single source of truth
+# for model, data, optimizer, and LoRA / QLoRA options.
+#
+# Pass it via:
+#     python scripts/train_sft.py --config configs/training_sft.yaml
+
+model_name: "Qwen/Qwen2-VL-2B-Instruct"
+output_dir: "./outputs/sft"
+train_dataset: "./data/train.jsonl"
+eval_dataset: null
+mode: "sft"
+
+# Sequence & optimization
+max_seq_length: 4096
+learning_rate: 2.0e-4
+num_train_epochs: 3
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+warmup_ratio: 0.03
+weight_decay: 0.0
+
+# Logging & checkpointing
+logging_steps: 10
+save_steps: 200
+eval_steps: 200
+save_total_limit: 3
+report_to: ["tensorboard"]
+
+# Generation defaults (used by SFT eval)
+max_new_tokens: 2048
+temperature: 0.7
+top_p: 0.9
+top_k: 50
+
+seed: 42
+gradient_checkpointing: true
+bf16: true
+fp16: false
+
+# LoRA / QLoRA (set enabled: true to activate)
+lora:
+  enabled: false
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+  bias: "none"
+  use_qlora: false
+
+# BitsAndBytes 4-bit / 8-bit quantization (only used with QLoRA)
+quantization:
+  enabled: false
+  load_in_4bit: true
+  load_in_8bit: false
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true
+
+# Distributed (set path to enable; pass --deepspeed to override)
+deepspeed: null
+fsdp: false
+
+# Weights are only used for GRPO; SFT ignores them.
+reward_weights:
+  equation_accuracy: 0.15
+  equation_syntax: 0.15
+  table_structure: 0.10
+  section_hierarchy: 0.10
+  citation_label_integrity: 0.10
+  cross_reference_validity: 0.10
+  compilation_success: 0.20
+  visual_similarity: 0.05
+  semantic_coherence: 0.05

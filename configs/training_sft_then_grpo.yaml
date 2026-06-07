@@ -1,0 +1,43 @@
+# SFT -> GRPO pipeline configuration. Run with
+#     python scripts/train_sft.py --config configs/training_sft_then_grpo.yaml
+# which will execute the SFT stage and then continue into GRPO using
+# the same reward weights as the GRPO config above.
+model_name: "Qwen/Qwen2-VL-2B-Instruct"
+output_dir: "./outputs/sft_then_grpo"
+train_dataset: "./data/train.jsonl"
+mode: "sft_then_grpo"
+
+max_seq_length: 4096
+learning_rate: 2.0e-4
+num_train_epochs: 3
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+
+logging_steps: 10
+save_steps: 200
+eval_steps: 200
+save_total_limit: 3
+report_to: ["tensorboard"]
+
+gradient_checkpointing: true
+bf16: true
+
+lora:
+  enabled: true
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+  bias: "none"
+  use_qlora: false
+
+reward_weights:
+  equation_accuracy: 0.15
+  equation_syntax: 0.15
+  table_structure: 0.10
+  section_hierarchy: 0.10
+  citation_label_integrity: 0.10
+  cross_reference_validity: 0.10
+  compilation_success: 0.20
+  visual_similarity: 0.05
+  semantic_coherence: 0.05

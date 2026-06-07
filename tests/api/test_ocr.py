@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import io
 
-from fastapi.testclient import TestClient
 from PIL import Image
+from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient
 
 from structured_ocr.api.app import create_app
 from structured_ocr.api.dependencies import get_inference_engine

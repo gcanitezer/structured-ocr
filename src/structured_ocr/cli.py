@@ -117,7 +117,7 @@ def pdf(
     click.echo(f"Processing PDF: {pdf_path}")
     images = extract_images_from_pdf(pdf_path, dpi=dpi)
     click.echo(f"Extracted {len(images)} pages")
-    results = batch_infer(pdf_path, engine)
+    results = batch_infer(images, engine)
     data = [
         {
             "page": r.page_number,

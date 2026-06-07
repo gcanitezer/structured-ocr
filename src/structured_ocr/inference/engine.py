@@ -28,7 +28,6 @@ class InferenceEngine:
     def __init__(self, config: InferConfig | None = None) -> None:
         self.config = config or InferConfig()
         self._backend: Backend | None = None
-        self._needs_init = True
 
     def _get_backend(self) -> Backend:
         if self._backend is not None:
@@ -84,8 +83,17 @@ class InferenceEngine:
             OCRResult with extracted LaTeX and metadata.
         """
         if config is not None:
+            orig_config = self.config
+            orig_backend = self._backend
             self.config = config
             self._backend = None
+            try:
+                backend = self._get_backend()
+                loaded = self._load_image(image)
+                return backend.infer(loaded)
+            finally:
+                self.config = orig_config
+                self._backend = orig_backend
 
         backend = self._get_backend()
         loaded = self._load_image(image)
@@ -103,7 +111,20 @@ class InferenceEngine:
         Returns:
             List of OCRResult objects, one per input image.
         """
-        return [self.infer(img, config) for img in images]
+        if config is not None:
+            orig_config = self.config
+            orig_backend = self._backend
+            self.config = config
+            self._backend = None
+            try:
+                backend = self._get_backend()
+                return [backend.infer(self._load_image(img)) for img in images]
+            finally:
+                self.config = orig_config
+                self._backend = orig_backend
+
+        backend = self._get_backend()
+        return [backend.infer(self._load_image(img)) for img in images]
 
     def close(self) -> None:
         """Release backend resources."""

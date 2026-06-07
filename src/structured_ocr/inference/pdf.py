@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import logging
-import tempfile
 from pathlib import Path
 from typing import List
+
+from PIL import Image
 
 from structured_ocr.data.types import OCRResult
 from structured_ocr.inference.engine import InferenceEngine
@@ -13,15 +14,15 @@ from structured_ocr.inference.engine import InferenceEngine
 logger = logging.getLogger(__name__)
 
 
-def extract_images_from_pdf(pdf_path: str | Path, dpi: int = 150) -> List[Path]:
-    """Extract pages from a PDF as image files.
+def extract_images_from_pdf(pdf_path: str | Path, dpi: int = 150) -> List[Image.Image]:
+    """Extract pages from a PDF as PIL Images.
 
     Args:
         pdf_path: Path to the PDF file.
         dpi: Resolution for rendering pages (default 150).
 
     Returns:
-        List of Paths to temporary image files, one per page.
+        List of PIL Images, one per page.
 
     Raises:
         ImportError: If pdf2image is not installed.
@@ -35,29 +36,21 @@ def extract_images_from_pdf(pdf_path: str | Path, dpi: int = 150) -> List[Path]:
             "Install with: pip install pdf2image"
         )
 
-    out_dir = Path(tempfile.mkdtemp(prefix="latexocr_pdf_"))
     images = convert_from_path(str(pdf_path), dpi=dpi)
-    paths: list[Path] = []
-    for i, img in enumerate(images):
-        page_path = out_dir / f"page_{i + 1:04d}.png"
-        img.save(str(page_path), "PNG")
-        paths.append(page_path)
-
-    logger.info("Extracted %d pages from %s", len(paths), pdf_path)
-    return paths
+    logger.info("Extracted %d pages from %s", len(images), pdf_path)
+    return images
 
 
-def batch_infer(pdf_path: str | Path, engine: InferenceEngine) -> List[OCRResult]:
-    """Run OCR inference on all pages of a PDF.
+def batch_infer(images: List[Image.Image], engine: InferenceEngine) -> List[OCRResult]:
+    """Run OCR inference on a list of PIL Images.
 
     Args:
-        pdf_path: Path to the PDF file.
+        images: List of PIL Images to process.
         engine: Initialized InferenceEngine instance.
 
     Returns:
         List of OCRResult objects, one per page.
     """
-    images = extract_images_from_pdf(pdf_path)
     results = engine.infer_batch(images)
     for i, result in enumerate(results):
         result.page_number = i + 1

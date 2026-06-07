@@ -29,7 +29,7 @@ async def verify(
         compilation={
             "outcome": result.compilation.outcome.value,
             "elapsed_seconds": result.compilation.elapsed_seconds,
-            "log_summary": result.compilation.log_summary,
+            "log_summary": "\n".join(result.compilation.errors) if result.compilation.errors else result.compilation.stderr[:500],
         }
         if result.compilation
         else None,

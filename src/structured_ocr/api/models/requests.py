@@ -9,12 +9,6 @@ class OCRRequest(BaseModel):
     max_new_tokens: int | None = None
 
 
-class BatchOCRRequest(BaseModel):
-    backend: str | None = None
-    device: str | None = None
-    max_new_tokens: int | None = None
-
-
 class VerifyRequest(BaseModel):
     latex: str
 

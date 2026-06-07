@@ -35,6 +35,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+api = [
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.0.0",
+    "httpx>=0.25.0",
+    "uvicorn>=0.23.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",

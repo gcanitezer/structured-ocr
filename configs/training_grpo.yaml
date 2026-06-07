@@ -1,0 +1,65 @@
+# GRPO / RLVR fine-tuning configuration for the Structured OCR pipeline.
+#
+# This config is consumed by scripts/train_grpo.py. It expects the
+# nine reward components to sum to ~1.0. The model_name field should
+# point to an SFT checkpoint produced by train_sft.py.
+
+model_name: "./outputs/sft"
+output_dir: "./outputs/grpo"
+train_dataset: "./data/train.jsonl"
+eval_dataset: null
+mode: "grpo"
+
+# Sequence & optimization
+max_seq_length: 4096
+learning_rate: 5.0e-6
+num_train_epochs: 1
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+warmup_ratio: 0.05
+weight_decay: 0.0
+
+# Logging & checkpointing
+logging_steps: 5
+save_steps: 100
+eval_steps: 100
+save_total_limit: 3
+report_to: ["tensorboard"]
+
+seed: 42
+gradient_checkpointing: true
+bf16: true
+fp16: false
+
+# LoRA (GRPO can be run on the LoRA adapter from SFT)
+lora:
+  enabled: false
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+  bias: "none"
+  use_qlora: false
+
+quantization:
+  enabled: false
+  load_in_4bit: true
+  load_in_8bit: false
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true
+
+deepspeed: null
+fsdp: false
+
+# 9 reward functions used by RLVR; weights must sum to ~1.0
+reward_weights:
+  equation_accuracy: 0.15
+  equation_syntax: 0.15
+  table_structure: 0.10
+  section_hierarchy: 0.10
+  citation_label_integrity: 0.10
+  cross_reference_validity: 0.10
+  compilation_success: 0.20
+  visual_similarity: 0.05
+  semantic_coherence: 0.05

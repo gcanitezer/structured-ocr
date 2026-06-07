@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import Depends
-
 from structured_ocr.inference.engine import InferenceEngine
-from structured_ocr.verification import LaTeXVerifier, VerificationConfig
+from structured_ocr.verification import LaTeXVerifier
 
 logger = logging.getLogger(__name__)
 

@@ -33,14 +33,120 @@ def main():
 main.add_command(corpus)
 
 
-@main.command()
-@click.argument("image_path", type=click.Path(exists=True))
+@main.group(invoke_without_command=True)
+@click.argument("image_path", type=click.Path(exists=True), required=False)
 @click.option("--output", "-o", type=click.Path(), help="Output LaTeX file path")
-def infer(image_path: str, output: str | None):
+@click.option(
+    "--backend",
+    "-b",
+    type=click.Choice(["pix2text", "huggingface"]),
+    default=None,
+    help="Inference backend",
+)
+@click.option("--device", "-d", type=str, default=None, help="Device (cpu, cuda, auto)")
+@click.option("--model", "-m", type=str, default=None, help="Override model name")
+@click.pass_context
+def infer(
+    ctx: click.Context,
+    image_path: str | None,
+    output: str | None,
+    backend: str | None,
+    device: str | None,
+    model: str | None,
+):
     """Perform OCR on an image and extract LaTeX."""
+    if ctx.invoked_subcommand is not None:
+        return
+    if image_path is None:
+        click.echo("Missing argument 'IMAGE_PATH'.", err=True)
+        ctx.exit(1)
+        return
+    _run_infer(image_path, output=output, backend=backend, device=device, model=model)
+
+
+def _run_infer(
+    image_path: str,
+    output: str | None = None,
+    backend: str | None = None,
+    device: str | None = None,
+    model: str | None = None,
+) -> None:
+    """Run single-image inference and handle output."""
+    from structured_ocr.inference import InferConfig, InferenceEngine
+
+    cfg = InferConfig()
+    if backend:
+        cfg.backend = backend
+    if device:
+        cfg.device = device
+    if model:
+        cfg.model_name = model
+
+    engine = InferenceEngine(config=cfg)
     click.echo(f"Processing {image_path}...")
-    # Implementation will be added
-    click.echo("OCR complete")
+    result = engine.infer(image_path)
+    if output:
+        Path(output).write_text(result.latex)
+        click.echo(f"Output written to {output}")
+    else:
+        click.echo(result.latex)
+
+
+@infer.command()
+@click.argument("pdf_path", type=click.Path(exists=True))
+@click.option("--output", "-o", type=click.Path(), help="Output JSON file path")
+@click.option("--dpi", type=int, default=150, help="PDF rendering DPI")
+@click.option(
+    "--backend",
+    "-b",
+    type=click.Choice(["pix2text", "huggingface"]),
+    default=None,
+    help="Inference backend",
+)
+@click.option("--device", "-d", type=str, default=None, help="Device (cpu, cuda, auto)")
+@click.option("--model", "-m", type=str, default=None, help="Override model name")
+def pdf(
+    pdf_path: str,
+    output: str | None,
+    dpi: int,
+    backend: str | None,
+    device: str | None,
+    model: str | None,
+):
+    """Extract and OCR all pages from a PDF document."""
+    from structured_ocr.inference import InferConfig, InferenceEngine
+    from structured_ocr.inference.pdf import batch_infer, extract_images_from_pdf
+
+    cfg = InferConfig()
+    if backend:
+        cfg.backend = backend
+    if device:
+        cfg.device = device
+    if model:
+        cfg.model_name = model
+
+    engine = InferenceEngine(config=cfg)
+    click.echo(f"Processing PDF: {pdf_path}")
+    images = extract_images_from_pdf(pdf_path, dpi=dpi)
+    click.echo(f"Extracted {len(images)} pages")
+    results = batch_infer(images, engine)
+    data = [
+        {
+            "page": r.page_number,
+            "latex": r.latex,
+            "confidence": r.confidence,
+            "processing_time_ms": r.processing_time_ms,
+            "model_name": r.model_name,
+            "warnings": r.warnings,
+        }
+        for r in results
+    ]
+    output_json = json.dumps(data, indent=2, default=str)
+    if output:
+        Path(output).write_text(output_json)
+        click.echo(f"Results written to {output}")
+    else:
+        click.echo(output_json)
 
 
 @main.group()

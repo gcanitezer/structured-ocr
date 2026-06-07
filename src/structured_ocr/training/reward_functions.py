@@ -1,7 +1,7 @@
 """Reward functions used by the GRPO/RLVR training stage.
 
 There are nine reward components, each scoring a different aspect of a
-generated LaTeX document. They can be combined via :class:`RewardWeights`
+generated LaTeX document. They can be combined via :class:`RewardConfig`
 or used individually for analysis.
 
 1. equation_accuracy
@@ -23,6 +23,8 @@ import math
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
+
+from .types import RewardConfig
 
 logger = logging.getLogger(__name__)
 
@@ -67,44 +69,6 @@ class RewardResult:
     breakdown: Dict[str, str]
     passed_tests: int
     total_tests: int
-
-
-@dataclass
-class RewardWeights:
-    """Per-component reward weights.
-
-    Defaults sum to 1.0. All nine named components must be present.
-    """
-
-    equation_accuracy: float = 0.15
-    equation_syntax: float = 0.15
-    table_structure: float = 0.10
-    section_hierarchy: float = 0.10
-    citation_label_integrity: float = 0.10
-    cross_reference_validity: float = 0.10
-    compilation_success: float = 0.20
-    visual_similarity: float = 0.05
-    semantic_coherence: float = 0.05
-
-    def as_dict(self) -> Dict[str, float]:
-        return {
-            "equation_accuracy": self.equation_accuracy,
-            "equation_syntax": self.equation_syntax,
-            "table_structure": self.table_structure,
-            "section_hierarchy": self.section_hierarchy,
-            "citation_label_integrity": self.citation_label_integrity,
-            "cross_reference_validity": self.cross_reference_validity,
-            "compilation_success": self.compilation_success,
-            "visual_similarity": self.visual_similarity,
-            "semantic_coherence": self.semantic_coherence,
-        }
-
-    def validate(self) -> None:
-        total = sum(self.as_dict().values())
-        if abs(total - 1.0) > 0.01:
-            raise ValueError(
-                f"Reward weights must sum to ~1.0 (got {total:.4f}); adjust values"
-            )
 
 
 class LaTeXUnitTestFramework:
@@ -379,10 +343,10 @@ class RewardFunction:
 
     def __init__(
         self,
-        weights: Optional[RewardWeights] = None,
+        weights: Optional[RewardConfig] = None,
         framework: Optional[LaTeXUnitTestFramework] = None,
     ) -> None:
-        self.weights = weights or RewardWeights()
+        self.weights = weights or RewardConfig()
         self.framework = framework or LaTeXUnitTestFramework()
 
     def compute(

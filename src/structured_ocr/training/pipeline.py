@@ -221,10 +221,7 @@ class TrainingPipeline:
         if sft_result is None or sft_result.output_dir is None:
             return
         ckpt = sft_result.output_dir
-        if (ckpt / "adapter_model.bin").exists() or (ckpt / "adapter_model.safetensors").exists():
-            self.config.model_name = str(ckpt)
-        else:
-            self.config.model_name = str(ckpt)
+        self.config.model_name = str(ckpt)
 
     def _maybe_run_verification(
         self,

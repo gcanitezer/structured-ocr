@@ -1,7 +1,6 @@
 """Structured OCR - LaTeX OCR System for Full Document Reconstruction."""
 
 from . import verification as verification
-from . import eval as eval
 from .verification import (
     ComponentResult,
     CompilationOutcome,
@@ -22,7 +21,6 @@ __version__ = "0.1.0"
 
 __all__ = [
     "verification",
-    "eval",
     "ComponentResult",
     "CompilationOutcome",
     "CompilationResult",

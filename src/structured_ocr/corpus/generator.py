@@ -1,10 +1,9 @@
 """LaTeX corpus generation with PDF compilation and image conversion."""
 
+import random
 import subprocess
 from pathlib import Path
 from typing import Any
-import tempfile
-from PIL import Image
 
 
 class CorpusGenerator:
@@ -127,7 +126,6 @@ class CorpusGenerator:
         """
         results = []
         for i in range(count):
-            import random
             random.seed(seed + i)
             latex = latex_generator_func(seed=seed + i)
             result = self.generate(latex["latex"], f"doc_{i:05d}", latex.get("metadata"))

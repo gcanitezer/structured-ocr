@@ -98,8 +98,11 @@ def test_compilation_success_compiles_simple_doc():
 
 
 def test_reward_function_compute_shape():
-rf = RewardFunction(weights=RewardConfig())
+    rf = RewardFunction(weights=RewardConfig())
+    result = rf.compute(predicted="\\section{x}", reference="\\section{x}")
+    assert isinstance(result, RewardResult)
     assert set(result.components.keys()) == set(RewardConfig().as_dict().keys())
+    assert 0.0 <= result.total_reward <= 1.0
 
 
 def test_reward_function_scoring():

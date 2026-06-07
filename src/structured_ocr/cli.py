@@ -9,6 +9,8 @@ from pathlib import Path
 
 import click
 
+from structured_ocr.corpus import corpus
+
 
 def _run_script(script_name: str, argv: list[str]) -> None:
     """Execute a sibling scripts/ entry point with the given argv."""
@@ -26,6 +28,9 @@ def _run_script(script_name: str, argv: list[str]) -> None:
 def main():
     """Structured OCR - LaTeX OCR System for Full Document Reconstruction."""
     pass
+
+
+main.add_command(corpus)
 
 
 @main.command()

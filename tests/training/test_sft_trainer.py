@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import json
-import os
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -16,10 +13,9 @@ from structured_ocr.training import (
     SFTDataset,
     SFTResult,
     TrainingConfig,
-    TrainingMode,
 )
 from structured_ocr.training.dataset_utils import PreparedSample
-from structured_ocr.training.sft_trainer import _pad_collator, _pad_collator  # noqa: F401
+from structured_ocr.training.sft_trainer import _pad_collator  # noqa: F401
 
 
 class _FakeTokenizer:

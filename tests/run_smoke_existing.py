@@ -15,9 +15,9 @@ from structured_ocr.training.reward_functions import (  # noqa: E402
     LaTeXUnitTestFramework,
     RewardFunction,
     RewardResult,
-    RewardWeights,
     UnitTestResult,
 )
+from structured_ocr.training.types import RewardConfig  # noqa: E402
 from structured_ocr.verification.compiler import (  # noqa: E402
     CompilationOutcome,
     CompilationResult,
@@ -30,11 +30,11 @@ class RewardFunctionSmokeTests(unittest.TestCase):
         self.assertEqual(r.details, "")
 
     def test_reward_weights_sum_to_one(self):
-        w = RewardWeights()
+        w = RewardConfig()
         self.assertAlmostEqual(sum(w.as_dict().values()), 1.0, places=6)
 
     def test_reward_weights_validate_rejects_bad_sum(self):
-        w = RewardWeights(equation_accuracy=0.5, equation_syntax=0.5)
+        w = RewardConfig(equation_accuracy=0.5, equation_syntax=0.5)
         with self.assertRaises(ValueError):
             w.validate()
 
@@ -82,15 +82,15 @@ class RewardFunctionSmokeTests(unittest.TestCase):
         self.assertAlmostEqual(r.score, 0.5)
 
     def test_reward_function_compute_shape(self):
-        rf = RewardFunction(weights=RewardWeights())
+        rf = RewardFunction(weights=RewardConfig())
         result = rf.compute(predicted="\\section{x}", reference="\\section{x}")
         self.assertIsInstance(result, RewardResult)
-        self.assertEqual(set(result.components.keys()), set(RewardWeights().as_dict().keys()))
+        self.assertEqual(set(result.components.keys()), set(RewardConfig().as_dict().keys()))
         self.assertGreaterEqual(result.total_reward, 0.0)
         self.assertLessEqual(result.total_reward, 1.0)
 
     def test_reward_function_batch_compute(self):
-        rf = RewardFunction(weights=RewardWeights())
+        rf = RewardFunction(weights=RewardConfig())
         results = rf.batch_compute(
             predictions=["\\section{x}", "no structure"],
             references=["\\section{x}", "\\section{x}"],

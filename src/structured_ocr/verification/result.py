@@ -49,9 +49,7 @@ class VerificationResult:
     total_score: float = 0.0
     passed_components: int = 0
     total_components: int = 0
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     extra: Dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -99,9 +97,7 @@ class VerificationSummary:
     num_documents: int = 0
     num_compiled: int = 0
     num_failed: int = 0
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
         return {

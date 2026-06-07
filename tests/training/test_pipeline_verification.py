@@ -6,8 +6,6 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from structured_ocr.training import (
     GRPOResult,
     SFTResult,
@@ -33,16 +31,17 @@ def test_pipeline_sft_runs_verification_by_default(tmp_path: Path):
         mode=TrainingMode.SFT,
         run_verification=True,
     )
-    fake_summary = VerificationSummary(
-        num_documents=1, batch_score=0.8, batch_pass_rate=0.9
-    )
+    fake_summary = VerificationSummary(num_documents=1, batch_score=0.8, batch_pass_rate=0.9)
     pipeline = TrainingPipeline(cfg)
     sft_result = SFTResult(
         output_dir=tmp_path / "out", train_loss=0.5, num_steps=2, num_train_samples=4
     )
-    with patch.object(pipeline, "_run_sft", return_value=sft_result), patch.object(
-        pipeline, "_maybe_run_verification", return_value=fake_summary.to_dict()
-    ) as mock_verify:
+    with (
+        patch.object(pipeline, "_run_sft", return_value=sft_result),
+        patch.object(
+            pipeline, "_maybe_run_verification", return_value=fake_summary.to_dict()
+        ) as mock_verify,
+    ):
         result = pipeline.run()
     assert mock_verify.called
     assert result.sft_verification is not None
@@ -66,9 +65,12 @@ def test_pipeline_grpo_runs_verification_by_default(tmp_path: Path):
     grpo_result = GRPOResult(
         output_dir=tmp_path / "out", final_reward=0.5, num_steps=2, num_prompts=4
     )
-    with patch.object(pipeline, "_run_grpo", return_value=grpo_result), patch.object(
-        pipeline, "_maybe_run_verification", return_value=fake_summary.to_dict()
-    ) as mock_verify:
+    with (
+        patch.object(pipeline, "_run_grpo", return_value=grpo_result),
+        patch.object(
+            pipeline, "_maybe_run_verification", return_value=fake_summary.to_dict()
+        ) as mock_verify,
+    ):
         result = pipeline.run()
     assert mock_verify.called
     assert result.grpo_verification is not None
@@ -88,9 +90,10 @@ def test_pipeline_can_disable_verification(tmp_path: Path):
     sft_result = SFTResult(
         output_dir=tmp_path / "out", train_loss=0.5, num_steps=2, num_train_samples=4
     )
-    with patch.object(pipeline, "_run_sft", return_value=sft_result), patch.object(
-        pipeline, "_maybe_run_verification", return_value=None
-    ) as mock_verify:
+    with (
+        patch.object(pipeline, "_run_sft", return_value=sft_result),
+        patch.object(pipeline, "_maybe_run_verification", return_value=None) as mock_verify,
+    ):
         result = pipeline.run()
     assert mock_verify.called  # pipeline called the hook
     assert result.sft_verification is None  # but the hook returned None (disabled)
@@ -157,10 +160,10 @@ def test_pipeline_training_result_to_dict_includes_verification(tmp_path: Path):
     grpo_result = GRPOResult(
         output_dir=tmp_path / "out", final_reward=0.7, num_steps=2, num_prompts=2
     )
-    with patch.object(pipeline, "_run_sft", return_value=sft_result), patch.object(
-        pipeline, "_run_grpo", return_value=grpo_result
-    ), patch.object(
-        pipeline, "_maybe_run_verification", return_value={"num_documents": 1}
+    with (
+        patch.object(pipeline, "_run_sft", return_value=sft_result),
+        patch.object(pipeline, "_run_grpo", return_value=grpo_result),
+        patch.object(pipeline, "_maybe_run_verification", return_value={"num_documents": 1}),
     ):
         result = pipeline.run()
     d = result.to_dict()

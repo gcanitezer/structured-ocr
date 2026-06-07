@@ -7,20 +7,21 @@ from pathlib import Path
 import pytest
 
 from structured_ocr.training import (
+    HAS_TRANSFORMERS,
     GRPOResult,
     GRPOTrainer,
-    HAS_TRANSFORMERS,
+    RewardConfig,
     RLVRConfig,
     TrainingConfig,
     TrainingMode,
 )
 from structured_ocr.training.grpo_trainer import (
     REWARD_NAMES,
-    _GroupedRewardScorer,
     _group_normalize,
+    _GroupedRewardScorer,
     _safe_mean,
 )
-from structured_ocr.training.reward_functions import RewardFunction, RewardWeights
+from structured_ocr.training.reward_functions import RewardFunction
 
 
 def test_rlvr_config_defaults():
@@ -57,7 +58,7 @@ def test_safe_mean():
 
 
 def test_scorer_returns_rewards_and_details():
-    rf = RewardFunction(weights=RewardWeights())
+    rf = RewardFunction(weights=RewardConfig())
     scorer = _GroupedRewardScorer(rf)
     rewards, details = scorer(
         prompts=["p1", "p2"],
@@ -72,11 +73,13 @@ def test_scorer_returns_rewards_and_details():
 
 
 def test_scorer_handles_compute_exception(monkeypatch):
-    rf = RewardFunction(weights=RewardWeights())
+    rf = RewardFunction(weights=RewardConfig())
     scorer = _GroupedRewardScorer(rf)
+
     # Force an exception path
     def _bad_compute(*args, **kwargs):
         raise RuntimeError("boom")
+
     monkeypatch.setattr(rf, "compute", _bad_compute)
     rewards, details = scorer(["p"], ["c"], ["r"])
     assert rewards == [0.0]
@@ -84,7 +87,7 @@ def test_scorer_handles_compute_exception(monkeypatch):
 
 
 def test_scorer_group_advantages():
-    rf = RewardFunction(weights=RewardWeights())
+    rf = RewardFunction(weights=RewardConfig())
     scorer = _GroupedRewardScorer(rf)
     advs = scorer.group_advantages([1.0, 2.0, 3.0, 4.0])
     assert len(advs) == 4

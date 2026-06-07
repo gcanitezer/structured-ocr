@@ -1,7 +1,7 @@
 """Reward functions used by the GRPO/RLVR training stage.
 
 There are nine reward components, each scoring a different aspect of a
-generated LaTeX document. They can be combined via :class:`RewardWeights`
+generated LaTeX document. They can be combined via :class:`RewardConfig`
 or used individually for analysis.
 
 1. equation_accuracy
@@ -21,8 +21,10 @@ import difflib
 import logging
 import math
 import re
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence
+
+from .types import RewardConfig
 
 logger = logging.getLogger(__name__)
 
@@ -67,44 +69,6 @@ class RewardResult:
     breakdown: Dict[str, str]
     passed_tests: int
     total_tests: int
-
-
-@dataclass
-class RewardWeights:
-    """Per-component reward weights.
-
-    Defaults sum to 1.0. All nine named components must be present.
-    """
-
-    equation_accuracy: float = 0.15
-    equation_syntax: float = 0.15
-    table_structure: float = 0.10
-    section_hierarchy: float = 0.10
-    citation_label_integrity: float = 0.10
-    cross_reference_validity: float = 0.10
-    compilation_success: float = 0.20
-    visual_similarity: float = 0.05
-    semantic_coherence: float = 0.05
-
-    def as_dict(self) -> Dict[str, float]:
-        return {
-            "equation_accuracy": self.equation_accuracy,
-            "equation_syntax": self.equation_syntax,
-            "table_structure": self.table_structure,
-            "section_hierarchy": self.section_hierarchy,
-            "citation_label_integrity": self.citation_label_integrity,
-            "cross_reference_validity": self.cross_reference_validity,
-            "compilation_success": self.compilation_success,
-            "visual_similarity": self.visual_similarity,
-            "semantic_coherence": self.semantic_coherence,
-        }
-
-    def validate(self) -> None:
-        total = sum(self.as_dict().values())
-        if abs(total - 1.0) > 0.01:
-            raise ValueError(
-                f"Reward weights must sum to ~1.0 (got {total:.4f}); adjust values"
-            )
 
 
 class LaTeXUnitTestFramework:
@@ -157,7 +121,7 @@ class LaTeXUnitTestFramework:
                 if re.search(r"\\\\\s*$", body.rstrip()):
                     errors += 1
         inline = re.findall(r"\$([^$\n]+)\$", predicted)
-        for math in inline:
+        for math_expr in inline:
             total += 1
             if math.count("$") % 2 == 1:
                 errors += 1
@@ -214,9 +178,7 @@ class LaTeXUnitTestFramework:
         labeled = set(re.findall(r"\\label\{([^}]+)\}", latex_source))
         used = cited | labeled
         if not used:
-            return UnitTestResult(
-                "citation_label_integrity", True, 1.0, "no citations or labels"
-            )
+            return UnitTestResult("citation_label_integrity", True, 1.0, "no citations or labels")
         symmetric_diff = cited.symmetric_difference(labeled)
         score = 1.0 - (len(symmetric_diff) / max(len(used), 1))
         return UnitTestResult(
@@ -275,21 +237,16 @@ class LaTeXUnitTestFramework:
 
         if not latex_source or not latex_source.strip():
             return UnitTestResult("compilation_success", False, 0.0, "empty source")
-        engine = LaTeXCompiler(
-            engine=compiler, timeout=float(timeout), passes=int(passes)
-        )
+        engine = LaTeXCompiler(engine=compiler, timeout=float(timeout), passes=int(passes))
         result = engine.compile_string(latex_source)
         if result.outcome == CompilationOutcome.SUCCESS:
             details = (
-                f"engine={compiler} passes={result.passes} "
-                f"elapsed={result.elapsed_seconds:.2f}s"
+                f"engine={compiler} passes={result.passes} elapsed={result.elapsed_seconds:.2f}s"
             )
             return UnitTestResult("compilation_success", True, 1.0, details)
         if result.outcome == CompilationOutcome.COMPILER_NOT_FOUND:
             passed = not _compiler_required()
-            return UnitTestResult(
-                "compilation_success", passed, 0.5, f"{compiler} not available"
-            )
+            return UnitTestResult("compilation_success", passed, 0.5, f"{compiler} not available")
         if result.outcome == CompilationOutcome.TIMEOUT:
             return UnitTestResult(
                 "compilation_success",
@@ -310,9 +267,7 @@ class LaTeXUnitTestFramework:
         self, predicted: str, extracted_image: Optional[bytes]
     ) -> UnitTestResult:
         if extracted_image is None:
-            return UnitTestResult(
-                "visual_similarity", True, 0.5, "no reference image; skipping"
-            )
+            return UnitTestResult("visual_similarity", True, 0.5, "no reference image; skipping")
         return UnitTestResult(
             "visual_similarity",
             False,
@@ -379,10 +334,10 @@ class RewardFunction:
 
     def __init__(
         self,
-        weights: Optional[RewardWeights] = None,
+        weights: Optional[RewardConfig] = None,
         framework: Optional[LaTeXUnitTestFramework] = None,
     ) -> None:
-        self.weights = weights or RewardWeights()
+        self.weights = weights or RewardConfig()
         self.framework = framework or LaTeXUnitTestFramework()
 
     def compute(
@@ -422,9 +377,7 @@ class RewardFunction:
     ) -> List[RewardResult]:
         if images is None:
             images = [None] * len(predictions)
-        return [
-            self.compute(p, r, img) for p, r, img in zip(predictions, references, images)
-        ]
+        return [self.compute(p, r, img) for p, r, img in zip(predictions, references, images)]
 
     @staticmethod
     def _shape_reward(score: float) -> float:

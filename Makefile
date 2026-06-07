@@ -1,53 +1,45 @@
-.PHONY: help dev-install install train test lint format clean run-api run-cli
+.PHONY: test lint format dev-install typecheck check
 
-PYTHON ?= python3
-SRC := src
-TESTS := tests
-PKG := structured-ocr
-
-help:
-	@echo "Common targets:"
-	@echo "  dev-install    - install the package with dev + train extras"
-	@echo "  install        - install the package (runtime deps only)"
-	@echo "  test           - run the test suite"
-	@echo "  lint           - run linters (ruff/black --check)"
-	@echo "  format         - auto-format with black + isort"
-	@echo "  clean          - remove build artifacts"
-	@echo "  train-sft      - run SFT with configs/training_sft.yaml"
-	@echo "  train-grpo     - run GRPO with configs/training_grpo.yaml"
-	@echo "  run-cli        - run the latexocr CLI"
-	@echo "  run-api        - run the FastAPI server"
-
-install:
-	$(PYTHON) -m pip install -e .
-
-dev-install:
-	$(PYTHON) -m pip install -e ".[dev,train]"
+SHELL = /bin/bash
+PYTHON = python3
+SRC = src
+TESTS = tests
+UNIT = tests/unit
+INTEGRATION = tests/integration
+BENCHMARK = tests/benchmark
+EDGE_CASES = tests/edge_cases
 
 test:
-	PYTHONPATH=$(SRC) $(PYTHON) -m pytest $(TESTS) -v
+	$(PYTHON) -m pytest $(TESTS) -v
+
+test-unit:
+	$(PYTHON) run_tests.py
+
+test-integration:
+	@echo "[warn] tests/integration is empty — no integration tests yet."
+	$(PYTHON) -m pytest $(INTEGRATION) -v --tb=short -x || true
+
+test-e2e:
+	@echo "[warn] tests/e2e does not exist — no end-to-end tests yet."
+	@true
+
+test-benchmark:
+	@echo "[warn] tests/benchmark is empty — no benchmark tests yet."
+	$(PYTHON) -m pytest $(BENCHMARK) -v --tb=short -x || true
+
+test-edge-cases:
+	$(PYTHON) -m pytest $(EDGE_CASES) -v --tb=short -x || true
 
 lint:
-	$(PYTHON) -m black --check $(SRC) $(TESTS) || true
-	$(PYTHON) -m isort --check-only $(SRC) $(TESTS) || true
+	$(PYTHON) -m ruff check $(SRC) $(TESTS)
 
 format:
-	$(PYTHON) -m black $(SRC) $(TESTS) || true
-	$(PYTHON) -m isort $(SRC) $(TESTS) || true
+	$(PYTHON) -m ruff format $(SRC) $(TESTS)
 
-clean:
-	rm -rf build/ dist/ *.egg-info src/*.egg-info
-	find . -type d -name __pycache__ -exec rm -rf {} + || true
-	find . -type d -name .pytest_cache -exec rm -rf {} + || true
+dev-install:
+	$(PYTHON) -m pip install -e ".[dev]"
 
-train-sft:
-	PYTHONPATH=$(SRC) $(PYTHON) scripts/train_sft.py --config configs/training_sft.yaml
+typecheck:
+	$(PYTHON) -m mypy $(SRC)
 
-train-grpo:
-	PYTHONPATH=$(SRC) $(PYTHON) scripts/train_grpo.py --config configs/training_grpo.yaml
-
-run-cli:
-	PYTHONPATH=$(SRC) $(PYTHON) -m structured_ocr.cli
-
-run-api:
-	$(PYTHON) -m uvicorn structured_ocr.api:app --reload
+check: lint typecheck test-unit

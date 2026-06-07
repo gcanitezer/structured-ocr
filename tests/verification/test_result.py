@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 
 import pytest
 
@@ -15,7 +14,9 @@ from structured_ocr.verification.result import (
 )
 
 
-def _component(name: str, score: float, weight: float = 0.0, passed: bool = False) -> ComponentResult:
+def _component(
+    name: str, score: float, weight: float = 0.0, passed: bool = False
+) -> ComponentResult:
     return ComponentResult(
         name=name,
         score=score,
@@ -80,9 +81,7 @@ def test_verification_result_components_by_name():
 
 
 def test_verification_result_to_dict_includes_compilation():
-    compilation = CompilationResult(
-        outcome=CompilationOutcome.SUCCESS, engine="pdflatex", passes=2
-    )
+    compilation = CompilationResult(outcome=CompilationOutcome.SUCCESS, engine="pdflatex", passes=2)
     result = VerificationResult(
         source="x",
         components=[_component("compilation_success", 1.0, passed=True)],
@@ -130,16 +129,12 @@ def test_verification_summary_counts_compiled(tmp_path):
     results = [
         VerificationResult(
             source="x",
-            compilation=CompilationResult(
-                outcome=CompilationOutcome.SUCCESS, engine="pdflatex"
-            ),
+            compilation=CompilationResult(outcome=CompilationOutcome.SUCCESS, engine="pdflatex"),
             components=[_component("compilation_success", 1.0, passed=True)],
         ),
         VerificationResult(
             source="x",
-            compilation=CompilationResult(
-                outcome=CompilationOutcome.FAILED, engine="pdflatex"
-            ),
+            compilation=CompilationResult(outcome=CompilationOutcome.FAILED, engine="pdflatex"),
             components=[_component("compilation_success", 0.0)],
         ),
     ]

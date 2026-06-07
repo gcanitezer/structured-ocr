@@ -2,12 +2,12 @@
 
 from . import verification as verification
 from .verification import (
-    ComponentResult,
+    SUPPORTED_COMPILERS,
     CompilationOutcome,
     CompilationResult,
+    ComponentResult,
     LaTeXCompiler,
     LaTeXVerifier,
-    SUPPORTED_COMPILERS,
     VerificationConfig,
     VerificationResult,
     VerificationSummary,

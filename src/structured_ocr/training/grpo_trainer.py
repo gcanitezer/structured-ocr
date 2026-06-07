@@ -21,7 +21,6 @@ from __future__ import annotations
 import json
 import logging
 import math
-import os
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -29,7 +28,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tupl
 
 from .dataset_utils import PreparedSample
 from .reward_functions import RewardFunction, RewardResult
-from .types import LoRAConfig, RewardConfig, TrainingConfig, TrainingMode
+from .types import TrainingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -46,23 +45,27 @@ try:
     from transformers import (  # type: ignore
         AutoModelForCausalLM,
         AutoTokenizer,
-        Trainer,
         TrainingArguments,
     )
+
     HAS_TRANSFORMERS = True
 except Exception:  # pragma: no cover
     HAS_TRANSFORMERS = False
 
 try:
     from peft import LoraConfig as _PeftLoraConfig  # type: ignore
-    from peft import PeftModel  # type: ignore
-    from peft import get_peft_model, prepare_model_for_kbit_training  # type: ignore
+    from peft import (  # type: ignore
+        get_peft_model,
+        prepare_model_for_kbit_training,
+    )
+
     HAS_PEFT = True
 except Exception:
     HAS_PEFT = False
 
 try:
     import bitsandbytes as bnb  # type: ignore  # noqa: F401
+
     HAS_BNB = True
 except Exception:
     HAS_BNB = False
@@ -70,12 +73,14 @@ except Exception:
 try:
     from trl import GRPOConfig as _TRLGRPOConfig  # type: ignore
     from trl import GRPOTrainer as _TRLGRPOTrainer  # type: ignore
+
     HAS_TRL_GRPO = True
 except Exception:
     HAS_TRL_GRPO = False
 
 try:
     from datasets import Dataset as _HFDataset  # type: ignore
+
     HAS_DATASETS = True
 except Exception:
     HAS_DATASETS = False
@@ -220,9 +225,7 @@ class GRPOTrainer:
             )
         self.config = config
         self.rlvr = rlvr or RLVRConfig()
-        self.reward_function = reward_function or RewardFunction(
-            weights=self.config.reward_weights
-        )
+        self.reward_function = reward_function or RewardFunction(weights=self.config.reward_weights)
         self.tokenizer: Any = None
         self.model: Any = None
         self.ref_model: Any = None
@@ -299,7 +302,9 @@ class GRPOTrainer:
             lora_cfg = _PeftLoraConfig(
                 r=cfg.lora.r,
                 lora_alpha=cfg.lora.lora_alpha,
-                lora_dropout=cfg.lora.dropout if hasattr(cfg.lora, "dropout") else cfg.lora.lora_dropout,
+                lora_dropout=cfg.lora.dropout
+                if hasattr(cfg.lora, "dropout")
+                else cfg.lora.lora_dropout,
                 target_modules=list(cfg.lora.target_modules),
                 bias=cfg.lora.bias,
                 task_type="CAUSAL_LM",
@@ -395,7 +400,9 @@ class GRPOTrainer:
             return None
 
     def _trl_reward_function(self) -> Callable[..., Any]:
-        def score_completions(prompts: Sequence[str], completions: Sequence[str], **kwargs: Any) -> List[float]:
+        def score_completions(
+            prompts: Sequence[str], completions: Sequence[str], **kwargs: Any
+        ) -> List[float]:
             references = kwargs.get("reference", [""] * len(completions))
             if isinstance(references, str):
                 references = [references] * len(completions)
@@ -557,7 +564,7 @@ class _GRPOFallbackLoop:
                     )
                 text = self.tokenizer.decode(out[0], skip_special_tokens=True)
                 if text.startswith(prompt):
-                    text = text[len(prompt):]
+                    text = text[len(prompt) :]
                 completions.append(text)
         self.model.train()
         return completions
@@ -680,7 +687,9 @@ class _GRPOFallbackLoop:
                 if details:
                     components: Dict[str, float] = {}
                     for name in REWARD_NAMES:
-                        components[name] = _safe_mean([d.components.get(name, 0.0) for d in details])
+                        components[name] = _safe_mean(
+                            [d.components.get(name, 0.0) for d in details]
+                        )
                     final_components = components
                 if num_steps % log_every == 0:
                     reward_history.append(
@@ -688,7 +697,9 @@ class _GRPOFallbackLoop:
                             "step": num_steps,
                             "epoch": epoch,
                             "mean_reward": mean_reward,
-                            "loss": float(loss.detach().item()) if hasattr(loss, "detach") else float(loss),
+                            "loss": float(loss.detach().item())
+                            if hasattr(loss, "detach")
+                            else float(loss),
                             "kl": kl_total,
                             "components": final_components,
                         }
@@ -702,7 +713,9 @@ class _GRPOFallbackLoop:
                     )
             if num_steps >= max_steps:
                 break
-        self._write_artifacts(reward_history, final_reward, final_components, num_steps, len(samples))
+        self._write_artifacts(
+            reward_history, final_reward, final_components, num_steps, len(samples)
+        )
         return GRPOResult(
             output_dir=self.output_dir,
             metrics={
@@ -717,9 +730,7 @@ class _GRPOFallbackLoop:
             elapsed_seconds=0.0,
         )
 
-    def _compute_advantages(
-        self, rewards: Sequence[float], group_size: int
-    ) -> List[float]:
+    def _compute_advantages(self, rewards: Sequence[float], group_size: int) -> List[float]:
         if not self.rlvr.use_group_normalization or group_size <= 1:
             return list(rewards)
         groups: List[List[float]] = []

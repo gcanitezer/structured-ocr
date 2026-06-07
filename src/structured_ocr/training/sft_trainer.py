@@ -16,15 +16,13 @@ from __future__ import annotations
 import json
 import logging
 import math
-import os
-import shutil
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-from .dataset_utils import PreparedSample
-from .types import LoRAConfig, QuantizationConfig, TrainingConfig, TrainingMode
+from .dataset_utils import DatasetUtils, PreparedSample
+from .types import TrainingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -39,40 +37,48 @@ try:
     from transformers import (  # type: ignore
         AutoModelForCausalLM,
         AutoTokenizer,
-        DataCollatorForLanguageModeling,
         Trainer,
         TrainingArguments,
     )
+
     HAS_TRANSFORMERS = True
 except Exception:  # pragma: no cover
     HAS_TRANSFORMERS = False
 
 try:
     from datasets import Dataset as _HFDataset  # type: ignore
+
     HAS_DATASETS = True
 except Exception:
     HAS_DATASETS = False
 
 try:
     from peft import LoraConfig as _PeftLoraConfig  # type: ignore
-    from peft import PeftModel  # type: ignore
-    from peft import get_peft_model, prepare_model_for_kbit_training  # type: ignore
+    from peft import (  # type: ignore
+        get_peft_model,
+        prepare_model_for_kbit_training,
+    )
+
     HAS_PEFT = True
 except Exception:
     HAS_PEFT = False
 
 try:
     import bitsandbytes as bnb  # type: ignore  # noqa: F401
+
     HAS_BNB = True
 except Exception:
     HAS_BNB = False
 
 try:
+    from trl import DataCollatorForCompletionOnlyLM  # type: ignore
     from trl import SFTConfig as _TRLSFTConfig  # type: ignore
     from trl import SFTTrainer as _TRLSFTTrainer  # type: ignore
+
     HAS_TRL = True
 except Exception:
     HAS_TRL = False
+    DataCollatorForCompletionOnlyLM = None  # type: ignore
 
 
 @dataclass
@@ -133,8 +139,10 @@ class SFTDataset:
         if hasattr(tok, "eos_token_id") and tok.eos_token_id is not None:
             answer_ids = answer_ids + [tok.eos_token_id]
         bos: List[int] = []
-        if hasattr(tok, "bos_token_id") and tok.bos_token_id is not None and getattr(
-            tok, "add_bos_token", False
+        if (
+            hasattr(tok, "bos_token_id")
+            and tok.bos_token_id is not None
+            and getattr(tok, "add_bos_token", False)
         ):
             bos = [tok.bos_token_id]
         full = bos + prompt_ids + answer_ids
@@ -145,8 +153,10 @@ class SFTDataset:
             else:
                 answer_ids = []
             full = bos + prompt_ids + answer_ids
-        labels = list(full) if not self.mask_prompt else (
-            [-100] * (len(bos) + len(prompt_ids)) + list(answer_ids)
+        labels = (
+            list(full)
+            if not self.mask_prompt
+            else ([-100] * (len(bos) + len(prompt_ids)) + list(answer_ids))
         )
         attn = [1] * len(full)
         return {
@@ -214,7 +224,9 @@ class SFTTrainer:
 
     @property
     def uses_qlora(self) -> bool:
-        return bool(self.config.lora.enabled and self.config.lora.use_qlora and HAS_PEFT and HAS_BNB)
+        return bool(
+            self.config.lora.enabled and self.config.lora.use_qlora and HAS_PEFT and HAS_BNB
+        )
 
     def setup_tokenizer(self) -> Any:
         if self.tokenizer is not None:
@@ -295,6 +307,9 @@ class SFTTrainer:
         if not samples:
             raise ValueError("No training samples provided")
         tokenizer = self.setup_tokenizer()
+        if eval_samples is None and self.config.eval_dataset is not None:
+            du = DatasetUtils(seed=self.config.seed)
+            eval_samples = du.prepare_from_file(self.config.eval_dataset)
         if HAS_DATASETS:
             train_dicts = [s.to_dict() for s in samples]
             self.train_dataset = _HFDataset.from_list(train_dicts)
@@ -359,12 +374,16 @@ class SFTTrainer:
         return TrainingArguments(**common)
 
     def _build_trainer(self) -> Any:
-        cfg = self.config
         tokenizer = self.setup_tokenizer()
         model = self.build_model()
         args = self._build_training_args()
         if HAS_TRL:
             try:
+                response_template_ids = tokenizer.encode("\n", add_special_tokens=False)
+                collator = DataCollatorForCompletionOnlyLM(
+                    response_template=response_template_ids,
+                    tokenizer=tokenizer,
+                )
                 self.trainer = _TRLSFTTrainer(
                     model=model,
                     args=args,
@@ -372,10 +391,13 @@ class SFTTrainer:
                     eval_dataset=self.eval_dataset,
                     tokenizer=tokenizer,
                     formatting_func=self._formatting_func(),
+                    data_collator=collator,
                 )
                 return self.trainer
             except Exception as exc:  # pragma: no cover - depends on TRL version
-                logger.warning("TRL SFTTrainer failed (%s); falling back to transformers.Trainer", exc)
+                logger.warning(
+                    "TRL SFTTrainer failed (%s); falling back to transformers.Trainer", exc
+                )
         if not HAS_TRANSFORMERS:
             raise ImportError("transformers Trainer not available")
         pad_id = tokenizer.pad_token_id
@@ -475,9 +497,7 @@ class SFTTrainer:
         except Exception as exc:  # pragma: no cover
             logger.warning("Failed to write training result: %s", exc)
 
-    def estimate_steps(
-        self, num_samples: int, per_device_batch_size: Optional[int] = None
-    ) -> int:
+    def estimate_steps(self, num_samples: int, per_device_batch_size: Optional[int] = None) -> int:
         bsz = per_device_batch_size or self.config.per_device_train_batch_size
         accum = self.config.gradient_accumulation_steps
         if bsz <= 0:

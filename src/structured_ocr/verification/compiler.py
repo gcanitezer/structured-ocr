@@ -34,7 +34,7 @@ import threading
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 logger = logging.getLogger(__name__)
 
@@ -92,12 +92,8 @@ class CompilationResult:
         return d
 
 
-_LOG_ERROR_RE = re.compile(
-    r"^!\s*(?P<msg>.+?)$", re.MULTILINE
-)
-_LOG_WARNING_RE = re.compile(
-    r"^LaTeX (?P<kind>Warning|Info):(?P<msg>.*?)(?:\n|$)", re.MULTILINE
-)
+_LOG_ERROR_RE = re.compile(r"^!\s*(?P<msg>.+?)$", re.MULTILINE)
+_LOG_WARNING_RE = re.compile(r"^LaTeX (?P<kind>Warning|Info):(?P<msg>.*?)(?:\n|$)", re.MULTILINE)
 _LOG_LINE_RE = re.compile(r"^l\.(?P<line>\d+)\s")
 
 
@@ -172,10 +168,7 @@ class LaTeXCompiler:
         keep_logs: bool = False,
     ) -> None:
         if engine not in SUPPORTED_COMPILERS:
-            raise ValueError(
-                f"Unsupported engine {engine!r}; "
-                f"choose one of {SUPPORTED_COMPILERS}"
-            )
+            raise ValueError(f"Unsupported engine {engine!r}; choose one of {SUPPORTED_COMPILERS}")
         if timeout <= 0:
             raise ValueError("timeout must be > 0")
         if passes < 1:
@@ -357,8 +350,7 @@ class LaTeXCompiler:
         pdf_path = output_dir / f"{jobname}.pdf"
         log_path = self._maybe_keep_log(output_dir, jobname)
         message = (
-            f"{self.engine} completed in {actual_passes} pass(es) "
-            f"with returncode={last_returncode}"
+            f"{self.engine} completed in {actual_passes} pass(es) with returncode={last_returncode}"
         )
         return CompilationResult(
             outcome=outcome,
@@ -428,9 +420,7 @@ def compile_document(
     calling :meth:`LaTeXCompiler.compile_string`. Provided for
     convenience in tests and the CLI.
     """
-    compiler = LaTeXCompiler(
-        engine=engine, timeout=timeout, passes=passes, keep_logs=keep_logs
-    )
+    compiler = LaTeXCompiler(engine=engine, timeout=timeout, passes=passes, keep_logs=keep_logs)
     return compiler.compile_string(source)
 
 

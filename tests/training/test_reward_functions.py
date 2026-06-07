@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
 from structured_ocr.training import (
     LaTeXUnitTestFramework,
+    RewardConfig,
     RewardFunction,
     RewardResult,
-    RewardWeights,
     UnitTestResult,
 )
 
@@ -22,13 +19,13 @@ def test_unit_test_result_default():
 
 
 def test_reward_weights_sum_to_one():
-    w = RewardWeights()
+    w = RewardConfig()
     total = sum(w.as_dict().values())
     assert abs(total - 1.0) < 1e-6
 
 
 def test_reward_weights_validate_rejects_bad_sum():
-    w = RewardWeights(equation_accuracy=0.5, equation_syntax=0.5)
+    w = RewardConfig(equation_accuracy=0.5, equation_syntax=0.5)
     with pytest.raises(ValueError, match="sum to ~1.0"):
         w.validate()
 
@@ -89,24 +86,22 @@ def test_visual_similarity_no_image():
 
 def test_compilation_success_compiles_simple_doc():
     f = LaTeXUnitTestFramework()
-    src = (
-        "\\documentclass{article}\n\\begin{document}\nHello.\n\\end{document}\n"
-    )
+    src = "\\documentclass{article}\n\\begin{document}\nHello.\n\\end{document}\n"
     r = f.test_compilation_success(src, compiler="pdflatex", timeout=20)
     # Score is either 1.0 (compiled), 0.5 (compiler not found), or 0.0 (failed/timeout)
     assert r.score in (0.0, 0.5, 1.0)
 
 
 def test_reward_function_compute_shape():
-    rf = RewardFunction(weights=RewardWeights())
+    rf = RewardFunction(weights=RewardConfig())
     result = rf.compute(predicted="\\section{x}", reference="\\section{x}")
     assert isinstance(result, RewardResult)
-    assert set(result.components.keys()) == set(RewardWeights().as_dict().keys())
+    assert set(result.components.keys()) == set(RewardConfig().as_dict().keys())
     assert 0.0 <= result.total_reward <= 1.0
 
 
-def test_reward_function_batch_compute():
-    rf = RewardFunction(weights=RewardWeights())
+def test_reward_function_scoring():
+    rf = RewardFunction(weights=RewardConfig())
     results = rf.batch_compute(
         predictions=["\\section{x}", "no structure"],
         references=["\\section{x}", "\\section{x}"],

@@ -32,7 +32,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
@@ -101,9 +101,7 @@ class TrainingPipeline:
     ) -> None:
         self.config = config
         self.rlvr = rlvr or RLVRConfig()
-        self.reward_function = reward_function or RewardFunction(
-            weights=config.reward_weights
-        )
+        self.reward_function = reward_function or RewardFunction(weights=config.reward_weights)
         self.dataset_utils = dataset_utils or DatasetUtils(seed=config.seed)
         self.output_dir = Path(config.output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -155,24 +153,16 @@ class TrainingPipeline:
         grpo_verification: Optional[Dict[str, Any]] = None
         if self.config.mode == TrainingMode.SFT:
             sft_result = self._run_sft(samples, eval_samples)
-            sft_verification = self._maybe_run_verification(
-                eval_samples, stage="sft"
-            )
+            sft_verification = self._maybe_run_verification(eval_samples, stage="sft")
         elif self.config.mode == TrainingMode.GRPO:
             grpo_result = self._run_grpo(samples)
-            grpo_verification = self._maybe_run_verification(
-                eval_samples, stage="grpo"
-            )
+            grpo_verification = self._maybe_run_verification(eval_samples, stage="grpo")
         elif self.config.mode == TrainingMode.SFT_THEN_GRPO:
             sft_result = self._run_sft(samples, eval_samples)
-            sft_verification = self._maybe_run_verification(
-                eval_samples, stage="sft"
-            )
+            sft_verification = self._maybe_run_verification(eval_samples, stage="sft")
             self._switch_to_grpo_base_model(sft_result)
             grpo_result = self._run_grpo(samples)
-            grpo_verification = self._maybe_run_verification(
-                eval_samples, stage="grpo"
-            )
+            grpo_verification = self._maybe_run_verification(eval_samples, stage="grpo")
         else:
             raise ValueError(f"Unsupported training mode: {self.config.mode}")
         elapsed = time.time() - start
@@ -221,10 +211,7 @@ class TrainingPipeline:
         if sft_result is None or sft_result.output_dir is None:
             return
         ckpt = sft_result.output_dir
-        if (ckpt / "adapter_model.bin").exists() or (ckpt / "adapter_model.safetensors").exists():
-            self.config.model_name = str(ckpt)
-        else:
-            self.config.model_name = str(ckpt)
+        self.config.model_name = str(ckpt)
 
     def _maybe_run_verification(
         self,
@@ -271,8 +258,7 @@ class TrainingPipeline:
         except Exception as exc:  # pragma: no cover
             logger.warning("Could not write verification report: %s", exc)
         logger.info(
-            "Verification[%s]: %.1f%% pass rate, %.3f batch score, "
-            "%d/%d compiled",
+            "Verification[%s]: %.1f%% pass rate, %.3f batch score, %d/%d compiled",
             stage,
             100.0 * summary.batch_pass_rate,
             summary.batch_score,

@@ -9,7 +9,6 @@ suite; the comprehensive tests live in tests/verification/.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -22,18 +21,21 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
+from structured_ocr.training.reward_functions import (  # noqa: E402
+    LaTeXUnitTestFramework,
+    set_compiler_required,
+)
 from structured_ocr.verification.compiler import (  # noqa: E402
+    SUPPORTED_COMPILERS,
     CompilationOutcome,
     CompilationResult,
     LaTeXCompiler,
-    SUPPORTED_COMPILERS,
     parse_log_errors,
     parse_log_warnings,
 )
 from structured_ocr.verification.result import (  # noqa: E402
     ComponentResult,
     VerificationResult,
-    VerificationSummary,
 )
 from structured_ocr.verification.verifier import (  # noqa: E402
     LaTeXVerifier,
@@ -41,17 +43,9 @@ from structured_ocr.verification.verifier import (  # noqa: E402
     verify_document,
     verify_documents,
 )
-from structured_ocr.training.reward_functions import (  # noqa: E402
-    LaTeXUnitTestFramework,
-    set_compiler_required,
-)
-
 
 SAMPLE_DOC = (
-    "\\documentclass{article}\n"
-    "\\begin{document}\n"
-    "Hello. \\section{Intro}\n"
-    "\\end{document}\n"
+    "\\documentclass{article}\n\\begin{document}\nHello. \\section{Intro}\n\\end{document}\n"
 )
 
 
@@ -98,9 +92,7 @@ class CompilerTests(unittest.TestCase):
             return completed
 
         compiler = _FakeSubprocessCompiler(passes=1)
-        with patch(
-            "structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run
-        ):
+        with patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run):
             result = compiler.compile_string(SAMPLE_DOC)
         self.assertEqual(result.outcome, CompilationOutcome.SUCCESS)
         self.assertEqual(result.score, 1.0)
@@ -108,7 +100,9 @@ class CompilerTests(unittest.TestCase):
         self.assertIsNotNone(result.output_path)
 
     def test_fake_failure(self):
-        completed = subprocess.CompletedProcess(args=["pdflatex"], returncode=1, stdout="", stderr="")
+        completed = subprocess.CompletedProcess(
+            args=["pdflatex"], returncode=1, stdout="", stderr=""
+        )
 
         def fake_run(cmd, **kwargs):
             Path(kwargs["cwd"]).joinpath("doc.log").write_text(
@@ -117,9 +111,7 @@ class CompilerTests(unittest.TestCase):
             return completed
 
         compiler = _FakeSubprocessCompiler(passes=1)
-        with patch(
-            "structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run
-        ):
+        with patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run):
             result = compiler.compile_string("oops")
         self.assertEqual(result.outcome, CompilationOutcome.FAILED)
         self.assertEqual(result.score, 0.0)
@@ -132,9 +124,7 @@ class CompilerTests(unittest.TestCase):
             raise subprocess.TimeoutExpired(cmd=cmd, timeout=kwargs["timeout"])
 
         compiler = _FakeSubprocessCompiler(passes=2, timeout=1.0)
-        with patch(
-            "structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run
-        ):
+        with patch("structured_ocr.verification.compiler.subprocess.run", side_effect=fake_run):
             result = compiler.compile_string("anything")
         self.assertEqual(result.outcome, CompilationOutcome.TIMEOUT)
         self.assertEqual(result.score, 0.0)
@@ -254,7 +244,9 @@ class VerifierTests(unittest.TestCase):
     def test_batch_returns_summary(self):
         verifier = LaTeXVerifier()
         verifier._compiler = _FakeCompiler(CompilationResult(outcome=CompilationOutcome.SUCCESS))
-        summary = verifier.verify_batch([SAMPLE_DOC, SAMPLE_DOC], references=[SAMPLE_DOC, SAMPLE_DOC])
+        summary = verifier.verify_batch(
+            [SAMPLE_DOC, SAMPLE_DOC], references=[SAMPLE_DOC, SAMPLE_DOC]
+        )
         self.assertEqual(summary.num_documents, 2)
         self.assertEqual(summary.num_compiled, 2)
 
@@ -384,8 +376,9 @@ class _FakeSubprocessCompiler(LaTeXCompiler):
 
 class PipelineIntegrationTests(unittest.TestCase):
     def setUp(self):
-        from structured_ocr.training import TrainingConfig, TrainingPipeline
         from unittest.mock import MagicMock
+
+        from structured_ocr.training import TrainingConfig, TrainingPipeline
 
         self._TrainingConfig = TrainingConfig
         self._TrainingPipeline = TrainingPipeline
@@ -416,15 +409,18 @@ class PipelineIntegrationTests(unittest.TestCase):
                 num_steps=2,
                 num_train_samples=4,
             )
-            with patch.object(pipeline, "_run_sft", return_value=sft_result), patch.object(
-                pipeline, "_maybe_run_verification", return_value=fake_summary
-            ) as mock_verify:
+            with (
+                patch.object(pipeline, "_run_sft", return_value=sft_result),
+                patch.object(
+                    pipeline, "_maybe_run_verification", return_value=fake_summary
+                ) as mock_verify,
+            ):
                 result = pipeline.run()
             self.assertTrue(mock_verify.called)
             self.assertIsNotNone(result.sft_verification)
 
     def test_verification_disabled(self):
-        from structured_ocr.training import TrainingMode, SFTResult
+        from structured_ocr.training import SFTResult, TrainingMode
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -445,8 +441,9 @@ class PipelineIntegrationTests(unittest.TestCase):
                 num_steps=2,
                 num_train_samples=2,
             )
-            with patch.object(pipeline, "_run_sft", return_value=sft_result), patch.object(
-                pipeline, "_maybe_run_verification", return_value=None
+            with (
+                patch.object(pipeline, "_run_sft", return_value=sft_result),
+                patch.object(pipeline, "_maybe_run_verification", return_value=None),
             ):
                 result = pipeline.run()
             self.assertIsNone(result.sft_verification)

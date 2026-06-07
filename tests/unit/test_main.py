@@ -30,11 +30,11 @@ class TestFormulaAccuracy(unittest.TestCase):
         self.assertAlmostEqual(rate, 1.0)
         self.assertGreaterEqual(rate, 0.8)
 
-    def test_bleu_perfect(self):
-        self.assertEqual(self.eval.bleu_score("E=mc^2", "E=mc^2"), 100.0)
+    def test_unigram_token_match_rate_perfect(self):
+        self.assertEqual(self.eval.unigram_token_match_rate("E=mc^2", "E=mc^2"), 100.0)
 
-    def test_bleu_mismatch_low(self):
-        self.assertLess(self.eval.bleu_score("alpha+beta", "x=y+z"), 50.0)
+    def test_unigram_token_match_rate_mismatch_low(self):
+        self.assertLess(self.eval.unigram_token_match_rate("alpha+beta", "x=y+z"), 50.0)
 
     def test_edit_distance_perfect(self):
         self.assertEqual(self.eval.edit_distance("abc", "abc"), 0)
